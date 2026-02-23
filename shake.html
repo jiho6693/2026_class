@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Red Screen — Shake · Escape</title>
+  <style>
+    html,body{
+      margin:0; height:100%;
+      overflow:hidden;
+      background:#1100ff;
+    }
+    canvas{display:block; width:100vw; height:100vh;}
+    .ui{
+      position:fixed;
+      left:12px; right:12px; bottom:12px;
+      display:flex; flex-wrap:wrap;
+      gap:10px 14px; align-items:center;
+      padding:10px 12px;
+      border-radius:14px;
+      background:rgba(25, 0, 255, 0.35);
+      backdrop-filter: blur(8px);
+      color:rgba(255,255,255,.86);
+      font:12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      user-select:none;
+    }
+    .ui .row{display:flex; align-items:center; gap:8px; min-width:220px; flex:1;}
+    .ui label{opacity:.9; white-space:nowrap;}
+    .ui input[type="range"]{width:140px;}
+    .ui button{
+      border:0; padding:8px 10px; border-radius:12px;
+      background:rgba(21, 0, 255, 0.12); color:#fff;
+      cursor:pointer;
+    }
+    .ui button:hover{background:rgba(255,255,255,.18);}
+    .ui .readout{margin-left:auto; opacity:.85; white-space:nowrap;}
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div class="ui" id="ui">
+    <div class="row">
+      <label>RectScale</label>
+      <input id="rectScale" type="range" min="70" max="98" value="90">
+      <span id="v_rectScale"></span>
+    </div>
+    <div class="row">
+      <label>ShakeAmp</label>
+      <input id="shakeAmp" type="range" min="0" max="80" value="18">
+      <span id="v_shakeAmp"></span>
+    </div>
+    <div class="row">
+      <label>ShakeFreq</label>
+      <input id="shakeFreq" type="range" min="1" max="60" value="18">
+      <span id="v_shakeFreq"></span>
+    </div>
+    <div class="row">
+      <label>KickChance</label>
+      <input id="kickChance" type="range" min="0" max="100" value="30">
+      <span id="v_kickChance"></span>
+    </div>
+    <div class="row">
+      <label>KickForce</label>
+      <input id="kickForce" type="range" min="0" max="1200" value="650">
+      <span id="v_kickForce"></span>
+    </div>
+    <div class="row">
+      <label>Return</label>
+      <input id="returnRate" type="range" min="80" max="99" value="94">
+      <span id="v_returnRate"></span>
+    </div>
+    <div class="row">
+      <label>Damping</label>
+      <input id="damping" type="range" min="70" max="98" value="88">
+      <span id="v_damping"></span>
+    </div>
+    <div class="row">
+      <label>Rot</label>
+      <input id="rotMax" type="range" min="0" max="20" value="6">
+      <span id="v_rotMax"></span>
+    </div>
+
+    <button id="kickNow">KICK</button>
+    <button id="toggleUI">UI</button>
+    <span class="readout" id="readout"></span>
+  </div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+function resize(){
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width  = innerWidth * dpr;
+  canvas.height = innerHeight * dpr;
+  canvas.style.width  = innerWidth + 'px';
+  canvas.style.height = innerHeight + 'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener('resize', resize, {passive:true});
+resize();
+
+const $ = id => document.getElementById(id);
+const sliders = {
+  rectScale: $('rectScale'),
+  shakeAmp: $('shakeAmp'),
+  shakeFreq: $('shakeFreq'),
+  kickChance: $('kickChance'),
+  kickForce: $('kickForce'),
+  returnRate: $('returnRate'),
+  damping: $('damping'),
+  rotMax: $('rotMax')
+};
+const readout = $('readout');
+
+function sync(){
+  v_rectScale.textContent  = (sliders.rectScale.value/100).toFixed(2);
+  v_shakeAmp.textContent   = sliders.shakeAmp.value;
+  v_shakeFreq.textContent  = sliders.shakeFreq.value;
+  v_kickChance.textContent = sliders.kickChance.value + '%';
+  v_kickForce.textContent  = sliders.kickForce.value;
+  v_returnRate.textContent = (sliders.returnRate.value/100).toFixed(2);
+  v_damping.textContent    = (sliders.damping.value/100).toFixed(2);
+  v_rotMax.textContent     = sliders.rotMax.value + '°';
+}
+Object.values(sliders).forEach(s => s.addEventListener('input', sync));
+sync();
+
+// smooth noise
+function smooth(t, s){
+  return (
+    Math.sin(t*1.3 + s) +
+    0.5*Math.sin(t*3.1 + s*2) +
+    0.25*Math.sin(t*6.7 + s*3)
+  ) / 1.75;
+}
+
+// physics state
+let kickX=0, kickY=0, kickR=0;
+let velX=0, velY=0, velR=0;
+
+function triggerKick(){
+  const f = +sliders.kickForce.value;
+  velX += (Math.random()*2-1) * f;
+  velY += (Math.random()*2-1) * f * 0.65;
+  velR += (Math.random()*2-1) * (sliders.rotMax.value * Math.PI/180) * 0.1;
+}
+
+// UI actions
+kickNow.onclick = e => { e.stopPropagation(); triggerKick(); };
+toggleUI.onclick = e => {
+  e.stopPropagation();
+  const ui = document.getElementById('ui');
+  ui.style.opacity = ui.style.opacity === '0' ? '1' : '0';
+  ui.style.pointerEvents = ui.style.pointerEvents === 'none' ? 'auto' : 'none';
+};
+addEventListener('click', () => triggerKick(), {passive:true});
+
+// auto kick
+let last = performance.now();
+function autoKick(now){
+  if (now - last > 1200){
+    last = now;
+    if (Math.random() < sliders.kickChance.value/100){
+      triggerKick();
+    }
+  }
+}
+
+let t0 = performance.now();
+function frame(now){
+  const w = innerWidth, h = innerHeight;
+  const t = (now - t0) * 0.001;
+
+  autoKick(now);
+
+  // base shake
+  const amp = +sliders.shakeAmp.value;
+  const freq = +sliders.shakeFreq.value;
+  const tt = t * freq * 0.6;
+
+  const bx = smooth(tt, 10) * amp;
+  const by = smooth(tt, 20) * amp;
+  const br = smooth(tt, 30) * (sliders.rotMax.value * Math.PI/180 * 0.08);
+
+  // integrate physics
+  kickX += velX; kickY += velY; kickR += velR;
+  velX *= sliders.damping.value/100;
+  velY *= sliders.damping.value/100;
+  velR *= sliders.damping.value/100;
+
+  kickX *= sliders.returnRate.value/100;
+  kickY *= sliders.returnRate.value/100;
+  kickR *= sliders.returnRate.value/100;
+
+  const dx = bx + kickX;
+  const dy = by + kickY;
+  const rot = br + kickR;
+
+  // draw
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = '#0302B2';
+  ctx.fillRect(0,0,w,h);
+
+  ctx.save();
+  ctx.translate(w/2 + dx, h/2 + dy);
+  ctx.rotate(rot);
+
+  const scale = sliders.rectScale.value/100;
+  const rw = w * scale;
+  const rh = h * scale;
+
+  ctx.fillStyle = '#ff0000';
+  ctx.fillRect(-rw/2, -rh/2, rw, rh);
+
+  ctx.restore();
+
+  readout.textContent = `dx:${dx.toFixed(1)} dy:${dy.toFixed(1)}`;
+
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// F = fullscreen
+addEventListener('keydown', e=>{
+  if (e.key.toLowerCase()==='f'){
+    if (!document.fullscreenElement){
+      document.documentElement.requestFullscreen().catch(()=>{});
+    } else {
+      document.exitFullscreen().catch(()=>{});
+    }
+  }
+});
+</script>
+</body>
+</html>

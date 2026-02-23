@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI & Visualization — Course Site</title>
+  <style>
+    :root{
+      --bg:#ffffff;
+      --fg:#0b0b0b;
+      --muted: rgba(0,0,0,.55);
+      --hair: rgba(0,0,0,.12);
+      --panel: rgba(255,255,255,.72);
+      --panel2: rgba(255,255,255,.86);
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      --radius: 18px;
+    }
+    html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);}
+    canvas{position:fixed; inset:0; display:block; touch-action:none;}
+    a{color:inherit; text-decoration:none;}
+    a:hover{text-decoration:underline;}
+
+    /* top nav */
+    .nav{
+      position:fixed; top:14px; left:14px; right:14px;
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      pointer-events:auto;
+      z-index:10;
+    }
+    .brand{
+      display:flex; flex-direction:column; gap:2px;
+      padding:10px 12px;
+      border:1px solid var(--hair);
+      background:var(--panel);
+      backdrop-filter: blur(10px);
+      border-radius:999px;
+      box-shadow: var(--shadow);
+    }
+    .brand b{font:600 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;}
+    .brand span{font:12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; color:var(--muted);}
+
+    .tabs{
+      display:flex; gap:8px; align-items:center;
+      padding:8px;
+      border:1px solid var(--hair);
+      background:var(--panel);
+      backdrop-filter: blur(10px);
+      border-radius:999px;
+      box-shadow: var(--shadow);
+    }
+    .tab{
+      border:1px solid transparent;
+      padding:8px 10px;
+      border-radius:999px;
+      font:12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      color:var(--muted);
+      cursor:pointer;
+      user-select:none;
+    }
+    .tab[aria-selected="true"]{
+      border-color: var(--hair);
+      background: var(--panel2);
+      color: var(--fg);
+    }
+
+    /* panel */
+    .panel{
+      position:fixed;
+      top:70px; left:14px; right:14px;
+      bottom:14px;
+      z-index:9;
+      pointer-events:auto;
+      display:none;
+    }
+    .panel.active{display:block;}
+    .card{
+      height:100%;
+      border:1px solid var(--hair);
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+    .cardHeader{
+      padding:14px 14px 10px 14px;
+      display:flex; align-items:flex-end; justify-content:space-between; gap:12px;
+      border-bottom:1px solid var(--hair);
+      background: rgba(255,255,255,.6);
+    }
+    .title{
+      display:flex; flex-direction:column; gap:4px;
+    }
+    .title h1{
+      margin:0;
+      font:700 14px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      letter-spacing: .2px;
+    }
+    .title p{
+      margin:0;
+      font:12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      color: var(--muted);
+    }
+    .actions{
+      display:flex; gap:8px; align-items:center;
+    }
+    .btn{
+      border:1px solid var(--hair);
+      background: rgba(255,255,255,.85);
+      border-radius:999px;
+      padding:8px 10px;
+      font:12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn:active{transform: translateY(1px);}
+
+    .cardBody{
+      padding:14px;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* schedule list */
+    .week{
+      border:1px solid var(--hair);
+      border-radius: 14px;
+      background: rgba(255,255,255,.72);
+      padding:12px;
+      margin-bottom:10px;
+    }
+    .weekTop{
+      display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;
+      margin-bottom:8px;
+    }
+    .weekTop b{
+      font:700 12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+    }
+    .meta{
+      font:12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      color: var(--muted);
+    }
+    .row{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin-top:6px;
+      font:12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid var(--hair);
+      background: rgba(255,255,255,.85);
+      color: rgba(0,0,0,.75);
+    }
+
+    /* drive */
+    .split{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:12px;
+    }
+    @media (max-width: 900px){
+      .split{grid-template-columns: 1fr;}
+    }
+    .box{
+      border:1px solid var(--hair);
+      border-radius: 14px;
+      background: rgba(255,255,255,.72);
+      overflow:hidden;
+    }
+    .boxHead{
+      padding:10px 12px;
+      border-bottom:1px solid var(--hair);
+      font:700 12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      background: rgba(255,255,255,.6);
+      display:flex; justify-content:space-between; align-items:center;
+      gap:10px;
+    }
+    .boxBody{
+      padding:12px;
+      font:12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      color: rgba(0,0,0,.8);
+    }
+    iframe{
+      width:100%;
+      height:62vh;
+      border:0;
+      display:block;
+      background:#fff;
+    }
+    .linkList{display:flex; flex-direction:column; gap:8px;}
+    .linkItem{
+      border:1px solid var(--hair);
+      background: rgba(255,255,255,.85);
+      border-radius: 12px;
+      padding:10px 10px;
+      display:flex; justify-content:space-between; gap:12px;
+      align-items:center;
+    }
+    .linkItem span{color:var(--muted);}
+  </style>
+</head>
+<body>
+  <!-- p5 canvas lives under everything -->
+
+  <div class="nav">
+    <div class="brand">
+      <b>AI & Visualization</b>
+      <span>course site — sticky field background</span>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Course sections">
+      <div class="tab" role="tab" tabindex="0" data-target="schedule" aria-selected="true">schedule</div>
+      <div class="tab" role="tab" tabindex="-1" data-target="drive" aria-selected="false">google drive</div>
+      <div class="tab" role="tab" tabindex="-1" data-target="home" aria-selected="false">home</div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <section id="panel-schedule" class="panel active">
+    <div class="card">
+      <div class="cardHeader">
+        <div class="title">
+          <h1>Schedule</h1>
+          <p>주차별 주제 / 세미나 / 워크샵 / 과제 / 링크</p>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btnExport">export JSON</button>
+        </div>
+      </div>
+      <div class="cardBody" id="scheduleList"></div>
+    </div>
+  </section>
+
+  <!-- GOOGLE DRIVE -->
+  <section id="panel-drive" class="panel">
+    <div class="card">
+      <div class="cardHeader">
+        <div class="title">
+          <h1>Google Drive</h1>
+          <p>자료 폴더 임베드 + 빠른 링크</p>
+        </div>
+        <div class="actions">
+          <a class="btn" id="driveOpenBtn" target="_blank" rel="noreferrer">open folder</a>
+        </div>
+      </div>
+
+      <div class="cardBody">
+        <div class="split">
+          <div class="box">
+            <div class="boxHead">
+              <div>embedded folder</div>
+              <div class="meta">권한: 링크 공개 필요</div>
+            </div>
+            <!-- iframe src is injected by JS -->
+            <iframe id="driveFrame" title="Google Drive Folder"></iframe>
+          </div>
+
+          <div class="box">
+            <div class="boxHead">
+              <div>quick links</div>
+              <div class="meta">syllabus / readings / submissions</div>
+            </div>
+            <div class="boxBody">
+              <div class="linkList" id="driveLinks"></div>
+              <div style="margin-top:10px; color: var(--muted); line-height:1.5;">
+                팁: Drive 폴더는 <b>‘링크가 있는 모든 사용자 보기’</b>로 설정해야<br/>
+                iframe 임베드와 링크가 학생들에게 바로 열려.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOME (just the background + short text) -->
+  <section id="panel-home" class="panel">
+    <div class="card">
+      <div class="cardHeader">
+        <div class="title">
+          <h1>Home</h1>
+          <p>배경은 “끈적한 필드” — 메뉴로 schedule/drive 이동</p>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btnReset">reset blobs</button>
+        </div>
+      </div>
+      <div class="cardBody" style="line-height:1.8;">
+        이 페이지는 <b>수업 운영(스케쥴/자료)</b>을 위한 최소 UI 위에,<br/>
+        “AI가 세계를 조직하는 방식”을 은유하는 <b>끈적한 필드</b>가 깔려 있어.<br/><br/>
+        - schedule: 주차별 주제/과제/링크 업데이트<br/>
+        - google drive: 자료 폴더 임베드 + 빠른 링크
+      </div>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+  <script>
+    /***********************
+     * 1) CONTENT (EDIT ME)
+     ***********************/
+
+    // ✅ Google Drive folder id를 넣어줘
+    // 폴더 URL 예: https://drive.google.com/drive/folders/XXXX?usp=sharing
+    const DRIVE_FOLDER_ID = "PASTE_YOUR_FOLDER_ID_HERE";
+
+    // ✅ quick links (원하는 문서/폴더 링크를 추가)
+    const DRIVE_QUICK_LINKS = [
+      { title: "Syllabus PDF", url: "PASTE_LINK_HERE" },
+      { title: "Readings", url: "PASTE_LINK_HERE" },
+      { title: "Slides", url: "PASTE_LINK_HERE" },
+      { title: "Assignments Upload", url: "PASTE_LINK_HERE" },
+    ];
+
+    // ✅ Schedule 데이터(원하는 만큼 늘려)
+    const SCHEDULE = [
+      {
+        week: 1,
+        date: "2026-03-02",
+        title: "Orientation — What does it mean that computers ‘see’?",
+        inClass: ["site intro", "visualization as worldview", "p5 field as metaphor"],
+        homework: ["write: 200–300 words (your ‘image’ hypothesis)", "collect 20 images (your dataset)"],
+        links: [{ label: "reading", url: "PASTE_LINK_HERE" }]
+      },
+      {
+        week: 2,
+        date: "2026-03-09",
+        title: "Data & Archive — Giving structure to a collection",
+        inClass: ["taxonomy vs noise", "metadata decisions", "bias as structure"],
+        homework: ["build mini-archive (50 items)", "present your classification logic"],
+        links: []
+      },
+      {
+        week: 3,
+        date: "2026-03-16",
+        title: "Latent Space — Similarity, clustering, and drift",
+        inClass: ["embedding intuition", "emergence", "field & constraint"],
+        homework: ["sketch: 3 visual metaphors for latent space"],
+        links: []
+      }
+    ];
+
+    /***********************
+     * 2) UI: tabs + panels
+     ***********************/
+    const tabs = Array.from(document.querySelectorAll(".tab"));
+    const panels = {
+      schedule: document.getElementById("panel-schedule"),
+      drive: document.getElementById("panel-drive"),
+      home: document.getElementById("panel-home"),
+    };
+
+    function activate(name){
+      for (const t of tabs){
+        const on = t.dataset.target === name;
+        t.setAttribute("aria-selected", on ? "true" : "false");
+        t.tabIndex = on ? 0 : -1;
+      }
+      for (const k of Object.keys(panels)){
+        panels[k].classList.toggle("active", k === name);
+      }
+    }
+
+    tabs.forEach(t=>{
+      t.addEventListener("click", ()=>activate(t.dataset.target));
+      t.addEventListener("keydown", (e)=>{
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          activate(t.dataset.target);
+        }
+      });
+    });
+
+    /***********************
+     * 3) Schedule render
+     ***********************/
+    const scheduleList = document.getElementById("scheduleList");
+
+    function pill(text){
+      const el = document.createElement("span");
+      el.className = "tag";
+      el.textContent = text;
+      return el;
+    }
+
+    function renderSchedule(){
+      scheduleList.innerHTML = "";
+      SCHEDULE.forEach(item=>{
+        const w = document.createElement("div");
+        w.className = "week";
+
+        const top = document.createElement("div");
+        top.className = "weekTop";
+
+        const left = document.createElement("div");
+        left.innerHTML = `<b>week ${item.week}</b> <span class="meta">• ${item.date}</span><div class="meta" style="margin-top:6px">${item.title}</div>`;
+
+        const right = document.createElement("div");
+        right.className = "meta";
+        right.textContent = item.links?.length ? `${item.links.length} link(s)` : "";
+
+        top.appendChild(left);
+        top.appendChild(right);
+
+        const inClass = document.createElement("div");
+        inClass.className = "row";
+        inClass.appendChild(pill("in-class"));
+        (item.inClass || []).forEach(x=>inClass.appendChild(pill(x)));
+
+        const hw = document.createElement("div");
+        hw.className = "row";
+        hw.appendChild(pill("homework"));
+        (item.homework || []).forEach(x=>hw.appendChild(pill(x)));
+
+        const links = document.createElement("div");
+        links.className = "row";
+        if ((item.links || []).length){
+          links.appendChild(pill("links"));
+          item.links.forEach(l=>{
+            const a = document.createElement("a");
+            a.className = "tag";
+            a.href = l.url;
+            a.target = "_blank";
+            a.rel = "noreferrer";
+            a.textContent = l.label;
+            links.appendChild(a);
+          });
+        }
+
+        w.appendChild(top);
+        w.appendChild(inClass);
+        w.appendChild(hw);
+        if ((item.links || []).length) w.appendChild(links);
+
+        scheduleList.appendChild(w);
+      });
+    }
+    renderSchedule();
+
+    document.getElementById("btnExport").addEventListener("click", ()=>{
+      const blob = new Blob([JSON.stringify(SCHEDULE, null, 2)], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "schedule.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    /***********************
+     * 4) Google Drive embed
+     ***********************/
+    const driveFrame = document.getElementById("driveFrame");
+    const driveOpenBtn = document.getElementById("driveOpenBtn");
+    const driveLinks = document.getElementById("driveLinks");
+
+    function renderDrive(){
+      // Embed URL format: https://drive.google.com/embeddedfolderview?id=FOLDER_ID#grid
+      const folderUrl = `https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID}`;
+      const embedUrl  = `https://drive.google.com/embeddedfolderview?id=${DRIVE_FOLDER_ID}#grid`;
+
+      driveFrame.src = embedUrl;
+      driveOpenBtn.href = folderUrl;
+
+      driveLinks.innerHTML = "";
+      DRIVE_QUICK_LINKS.forEach(x=>{
+        const row = document.createElement("a");
+        row.className = "linkItem";
+        row.href = x.url;
+        row.target = "_blank";
+        row.rel = "noreferrer";
+        row.innerHTML = `<b>${x.title}</b><span>open ↗</span>`;
+        driveLinks.appendChild(row);
+      });
+    }
+    renderDrive();
+
+    document.getElementById("btnReset").addEventListener("click", ()=> {
+      window.__resetBlobs?.();
+    });
+
+    /***********************
+     * 5) p5 background (sticky blobs)
+     ***********************/
+    let blobs = [];
+    let pg;
+    let grabbed = -1;
+    let grabOffset;
+    let prevMouse;
+    let drift;
+
+    let P = {};
+    let targetRes = 2.6;
+    const RES_HI = 2.1, RES_MID = 2.6, RES_LO = 3.2, RES_LO_MOBILE = 3.8;
+
+    function isMobileLike(){
+      return (window.innerWidth <= 760) || ('ontouchstart' in window);
+    }
+
+    function computeParams(){
+      const m = isMobileLike();
+      const s = Math.min(window.innerWidth, window.innerHeight);
+
+      const Rbase = m ? Math.round(s * 0.48) : Math.round(s * 0.36);
+      const R = constrain(Rbase, m ? 90 : 120, m ? 380 : 480);
+
+      const RES = targetRes;
+      const THRESH = m ? 0.885 : 0.90;
+
+      const MAX_V = m ? 0.45 : 0.60;
+      const DAMP  = m ? 0.988 : 0.987;
+
+      const STICK_RANGE = Math.round(R * (m ? 2.0 : 2.2));
+      const STICK_PULL  = m ? 0.00075 : 0.00085;
+
+      const WALL_ZONE      = m ? 110 : 95;
+      const WALL_STICK     = m ? 0.90 : 0.86;
+      const WALL_FRICTION  = m ? 0.93 : 0.91;
+      const WALL_PUSH      = m ? 0.060 : 0.055;
+      const WALL_ADHESION  = m ? 0.020 : 0.016;
+      const WALL_HOLD      = m ? 0.020 : 0.016;
+
+      const GRAB_RADIUS = Math.round(R * (m ? 0.95 : 0.85));
+      const DRAG_STIFF  = m ? 0.20 : 0.22;
+      const DRAG_DAMP   = m ? 0.74 : 0.76;
+      const RELEASE_INERTIA = m ? 0.025 : 0.030;
+
+      const SIZE_JITTER_MIN = 0.92;
+      const SIZE_JITTER_MAX = 1.08;
+
+      return {
+        mobile: m,
+        N: m ? 3 : 4,
+        R, RES, THRESH,
+        MAX_V, DAMP,
+        STICK_RANGE, STICK_PULL,
+        WALL_ZONE, WALL_STICK, WALL_FRICTION, WALL_PUSH,
+        WALL_ADHESION, WALL_HOLD,
+        GRAB_RADIUS, DRAG_STIFF, DRAG_DAMP, RELEASE_INERTIA,
+        SIZE_JITTER_MIN, SIZE_JITTER_MAX
+      };
+    }
+
+    function initBuffer(){
+      const w = Math.max(1, Math.floor(windowWidth / P.RES));
+      const h = Math.max(1, Math.floor(windowHeight / P.RES));
+      pg = createGraphics(w, h);
+      pg.pixelDensity(1);
+      pg.noSmooth();
+    }
+
+    function initBlobs(){
+      blobs = [];
+      for (let i=0;i<P.N;i++){
+        const r = P.R * random(P.SIZE_JITTER_MIN, P.SIZE_JITTER_MAX);
+        const pad = r * 0.10;
+        blobs.push({
+          pos: createVector(random(pad, width - pad), random(pad, height - pad)),
+          vel: createVector(random(-0.35,0.35) * (P.mobile ? 0.8 : 1.0),
+                            random(-0.28,0.28) * (P.mobile ? 0.8 : 1.0)),
+          r
+        });
+      }
+    }
+
+    window.__resetBlobs = ()=> {
+      P = computeParams();
+      initBlobs();
+      initBuffer();
+    };
+
+    function setup(){
+      createCanvas(windowWidth, windowHeight);
+      pixelDensity(1);
+
+      targetRes = isMobileLike() ? 3.2 : 2.6;
+      P = computeParams();
+
+      drift = createVector(0.03, 0.006);
+      grabbed = -1;
+      grabOffset = createVector(0,0);
+      prevMouse = createVector(mouseX, mouseY);
+
+      initBlobs();
+      initBuffer();
+    }
+
+    function windowResized(){
+      resizeCanvas(windowWidth, windowHeight);
+      targetRes = isMobileLike() ? 3.2 : 2.6;
+      P = computeParams();
+
+      if (blobs.length !== P.N) initBlobs();
+      initBuffer();
+    }
+
+    function draw(){
+      // adaptive resolution
+      if (frameCount % 12 === 0){
+        const fps = frameRate();
+        const mobile = P.mobile;
+        let want = RES_MID;
+        if (fps < 40) want = mobile ? RES_LO_MOBILE : RES_LO;
+        else if (fps < 55) want = RES_MID;
+        else want = RES_HI;
+
+        if (Math.abs(targetRes - want) > 0.08){
+          targetRes = want;
+          P = computeParams();
+          initBuffer();
+        }
+      }
+
+      background(255);
+      updateBlobs();
+      renderMetaballs();
+      image(pg, 0, 0, width, height);
+
+      prevMouse.set(mouseX, mouseY);
+    }
+
+    function updateBlobs(){
+      for (let i=0;i<blobs.length;i++){
+        for (let j=i+1;j<blobs.length;j++){
+          const a = blobs[i], b = blobs[j];
+          const dx = b.pos.x - a.pos.x;
+          const dy = b.pos.y - a.pos.y;
+          const d = Math.sqrt(dx*dx + dy*dy) + 1e-6;
+
+          if (d < P.STICK_RANGE){
+            const s = (1 - d / P.STICK_RANGE);
+            const sizeBias = (a.r + b.r) / (2 * P.R);
+            const f = P.STICK_PULL * sizeBias * s * s;
+            const fx = (dx / d) * f;
+            const fy = (dy / d) * f;
+            a.vel.x += fx; a.vel.y += fy;
+            b.vel.x -= fx; b.vel.y -= fy;
+          }
+        }
+      }
+
+      for (let i=0;i<blobs.length;i++){
+        const b = blobs[i];
+
+        if (i === grabbed){
+          const target = createVector(mouseX, mouseY).add(grabOffset);
+          const dx = target.x - b.pos.x;
+          const dy = target.y - b.pos.y;
+          b.vel.x = b.vel.x * P.DRAG_DAMP + dx * P.DRAG_STIFF * 0.12;
+          b.vel.y = b.vel.y * P.DRAG_DAMP + dy * P.DRAG_STIFF * 0.12;
+          b.pos.add(b.vel);
+          wallAdhere(b);
+          continue;
+        }
+
+        b.vel.x += drift.x * 0.01;
+        b.vel.y += drift.y * 0.01;
+
+        b.vel.mult(P.DAMP);
+        b.vel.x = constrain(b.vel.x, -P.MAX_V, P.MAX_V);
+        b.vel.y = constrain(b.vel.y, -P.MAX_V, P.MAX_V);
+
+        b.pos.add(b.vel);
+        wallAdhere(b);
+      }
+    }
+
+    function wallAdhere(b){
+      const pad = b.r * 0.10;
+
+      // left
+      const dl = b.pos.x - pad;
+      if (dl < P.WALL_ZONE){
+        const t = constrain(1 - dl / P.WALL_ZONE, 0, 1);
+        if (dl < 0) b.pos.x += (-dl) * P.WALL_PUSH;
+        if (b.vel.x < 0) b.vel.x *= (1 - P.WALL_STICK * t);
+        b.vel.y *= lerp(1, P.WALL_FRICTION, t);
+        b.vel.x -= P.WALL_ADHESION * t;
+        b.pos.x = lerp(b.pos.x, pad, P.WALL_HOLD * t);
+      }
+
+      // right
+      const dr = (width - pad) - b.pos.x;
+      if (dr < P.WALL_ZONE){
+        const t = constrain(1 - dr / P.WALL_ZONE, 0, 1);
+        if (dr < 0) b.pos.x -= (-dr) * P.WALL_PUSH;
+        if (b.vel.x > 0) b.vel.x *= (1 - P.WALL_STICK * t);
+        b.vel.y *= lerp(1, P.WALL_FRICTION, t);
+        b.vel.x += P.WALL_ADHESION * t;
+        b.pos.x = lerp(b.pos.x, width - pad, P.WALL_HOLD * t);
+      }
+
+      // top
+      const dt = b.pos.y - pad;
+      if (dt < P.WALL_ZONE){
+        const t = constrain(1 - dt / P.WALL_ZONE, 0, 1);
+        if (dt < 0) b.pos.y += (-dt) * P.WALL_PUSH;
+        if (b.vel.y < 0) b.vel.y *= (1 - P.WALL_STICK * t);
+        b.vel.x *= lerp(1, P.WALL_FRICTION, t);
+        b.vel.y -= P.WALL_ADHESION * t;
+        b.pos.y = lerp(b.pos.y, pad, P.WALL_HOLD * t);
+      }
+
+      // bottom
+      const db = (height - pad) - b.pos.y;
+      if (db < P.WALL_ZONE){
+        const t = constrain(1 - db / P.WALL_ZONE, 0, 1);
+        if (db < 0) b.pos.y -= (-db) * P.WALL_PUSH;
+        if (b.vel.y > 0) b.vel.y *= (1 - P.WALL_STICK * t);
+        b.vel.x *= lerp(1, P.WALL_FRICTION, t);
+        b.vel.y += P.WALL_ADHESION * t;
+        b.pos.y = lerp(b.pos.y, height - pad, P.WALL_HOLD * t);
+      }
+
+      b.pos.x = constrain(b.pos.x, pad - 3, width - pad + 3);
+      b.pos.y = constrain(b.pos.y, pad - 3, height - pad + 3);
+    }
+
+    function renderMetaballs(){
+      const w = pg.width, h = pg.height;
+      pg.loadPixels();
+      const pix = pg.pixels;
+      const sx = w / width;
+      const sy = h / height;
+
+      let idx = 0;
+      for (let y=0; y<h; y++){
+        for (let x=0; x<w; x++){
+          let field = 0;
+          const px = x / sx;
+          const py = y / sy;
+
+          for (let k=0;k<blobs.length;k++){
+            const b = blobs[k];
+            const dx = px - b.pos.x;
+            const dy = py - b.pos.y;
+            const d2 = dx*dx + dy*dy + 0.0001;
+            field += (b.r * b.r) / d2;
+          }
+
+          const norm = field / (blobs.length * 1.6);
+
+          let a = 0;
+          if (norm >= P.THRESH){
+            const edge = constrain((norm - P.THRESH) / 0.22, 0, 1);
+            a = 255 * (0.78 + 0.22*edge);
+          }
+
+          pix[idx++] = 0;
+          pix[idx++] = 0;
+          pix[idx++] = 0;
+          pix[idx++] = a;
+        }
+      }
+      pg.updatePixels();
+
+      pg.push();
+      pg.blendMode(MULTIPLY);
+      pg.tint(0,0,0, 22);
+      pg.image(pg, 0, 0);
+      pg.pop();
+    }
+
+    function mousePressed(){
+      prevMouse.set(mouseX, mouseY);
+      grabbed = findNearestBlob(mouseX, mouseY, P.GRAB_RADIUS);
+      if (grabbed !== -1){
+        grabOffset = p5.Vector.sub(blobs[grabbed].pos, createVector(mouseX, mouseY));
+      }
+    }
+    function mouseReleased(){
+      if (grabbed !== -1){
+        const b = blobs[grabbed];
+        const mv = createVector(mouseX - prevMouse.x, mouseY - prevMouse.y);
+        b.vel.add(mv.mult(P.RELEASE_INERTIA));
+      }
+      grabbed = -1;
+    }
+    function findNearestBlob(x,y, radius){
+      let best = -1, bestD = radius;
+      for (let i=0;i<blobs.length;i++){
+        const d = dist(x,y, blobs[i].pos.x, blobs[i].pos.y);
+        if (d < bestD){ bestD = d; best = i; }
+      }
+      return best;
+    }
+
+    function touchStarted(){ mousePressed(); return false; }
+    function touchEnded(){ mouseReleased(); return false; }
+  </script>
+</body>
+</html>

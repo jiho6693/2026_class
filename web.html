@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Floating ASCII → Layout (no boxes)</title>
+  <style>
+    :root{
+      --bg:#070a08;
+      --fg:#d8f7de;
+      --muted:#9fd3a9;
+      --dim:#6aa879;
+      --accent:#7cffb0;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:
+        radial-gradient(1200px 800px at 30% 15%, rgba(30,70,45,.18), transparent 60%),
+        radial-gradient(900px 700px at 80% 70%, rgba(120,255,176,.06), transparent 55%),
+        linear-gradient(180deg, #050806, var(--bg));
+      color:var(--fg);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      overflow:hidden; /* 전체가 무대 */
+    }
+
+    /* 전체 페이지 유영(카메라 드리프트) */
+    #world{
+      position:fixed;
+      inset:-6vh -6vw; /* 조금 크게 해서 흔들려도 빈 공간 안 보이게 */
+      will-change: transform;
+    }
+
+    /* 최종 배열 텍스트 영역 (보이지 않게 측정용) */
+    #ghost{
+      position:absolute;
+      top:6vh;
+      left:6vw;
+      visibility:hidden;
+      white-space:pre;
+      font-size:14px;
+      line-height:1.25;
+    }
+
+    /* 글자들이 떠다니는 레이어 */
+    #letters{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+    }
+    .ch{
+      position:absolute;
+      top:0; left:0;
+      font-size:14px;
+      line-height:1.25;
+      white-space:pre;
+      will-change: transform, opacity;
+      color:var(--fg);
+      opacity:0.98;
+      text-shadow:
+        0 0 14px rgba(124,255,176,.10),
+        0 0 40px rgba(124,255,176,.05);
+    }
+    .ch.dim{ color:var(--dim); opacity:.88; }
+    .ch.muted{ color:var(--muted); opacity:.92; }
+
+    /* 아주 최소한의 안내(원하면 제거 가능) */
+    #ui{
+      position:fixed;
+      left:18px;
+      bottom:18px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      z-index:5;
+      user-select:none;
+      mix-blend-mode:screen;
+    }
+    button{
+      appearance:none;
+      border:1px solid rgba(124,255,176,.25);
+      background:rgba(7,10,8,.25);
+      color:var(--fg);
+      padding:10px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      font-size:12px;
+      letter-spacing:.02em;
+      backdrop-filter: blur(6px);
+    }
+    button:hover{ border-color: rgba(124,255,176,.55); }
+    button:active{ transform: translateY(1px); }
+
+    .hint{
+      font-size:12px;
+      color:rgba(216,247,222,.78);
+      padding-left:2px;
+    }
+  </style>
+</head>
+<body>
+  <div id="world">
+    <pre id="ghost"></pre>
+    <div id="letters"></div>
+  </div>
+
+  <div id="ui">
+    <button id="trigger">Return to layout</button>
+    <div class="hint">Click / Space</div>
+  </div>
+
+<script>
+(() => {
+  // ====== 최종 레이아웃 텍스트 ======
+  const FINAL_TEXT = [
+"AI & Visualization — ASCII-first site",
+"",
+"컴퓨터는 이미지를 어떻게 ‘본다’고 말할 수 있는가?",
+"",
+"픽셀 / 샘플링 / 좌표 / 배열 / 압축",
+"",
+"데이터와 아카이브 — 체계를 만들고, 규칙으로 시각화하기",
+"",
+"텍스트→이미지: 무엇을 생성할 수 있는가 / 무엇을 생성해도 되는가",
+"",
+"Project: 고정된 과거 로그처럼 보이지만 복원되지 않는 인터페이스",
+"",
+"바람 / 구름 / 태양 — 예측과 제의, 알고리즘과 믿음의 겹침",
+"",
+"끝."
+  ].join("\n");
+
+  // ====== 초기 “그림(ASCII)”용 텍스트 ======
+  const LOGO_TEXT = "WIND / CLOUD / SUN";
+
+  // ====== DOM ======
+  const world = document.getElementById("world");
+  const ghost = document.getElementById("ghost");
+  const lettersEl = document.getElementById("letters");
+  const triggerBtn = document.getElementById("trigger");
+
+  ghost.textContent = FINAL_TEXT;
+
+  // ====== helpers ======
+  const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+  const lerp  = (a,b,t)=>a+(b-a)*t;
+
+  // 간단한 value-noise(부드러운 유영용)
+  function hash2(x,y){
+    // deterministic pseudo-random
+    let n = x*374761393 + y*668265263;
+    n = (n ^ (n >> 13)) * 1274126177;
+    return ((n ^ (n >> 16)) >>> 0) / 4294967295;
+  }
+  function smoothstep(t){ return t*t*(3-2*t); }
+  function noise2(x,y){
+    const xi = Math.floor(x), yi = Math.floor(y);
+    const xf = x - xi, yf = y - yi;
+    const a = hash2(xi, yi);
+    const b = hash2(xi+1, yi);
+    const c = hash2(xi, yi+1);
+    const d = hash2(xi+1, yi+1);
+    const u = smoothstep(xf), v = smoothstep(yf);
+    return lerp(lerp(a,b,u), lerp(c,d,u), v); // 0..1
+  }
+
+  function measureCharBox(){
+    const probe = document.createElement("span");
+    probe.style.position="absolute";
+    probe.style.visibility="hidden";
+    probe.style.font = getComputedStyle(ghost).font;
+    probe.style.fontSize = getComputedStyle(ghost).fontSize;
+    probe.textContent="M";
+    world.appendChild(probe);
+    const r = probe.getBoundingClientRect();
+    probe.remove();
+
+    const fontSize = parseFloat(getComputedStyle(ghost).fontSize) || 14;
+    return { cw: r.width, ch: fontSize*1.25 };
+  }
+
+  function getFinalPositions(text, cw, ch){
+    const lines = text.split("\n");
+    const positions = [];
+    let row=0;
+    for (const ln of lines){
+      for (let col=0; col<ln.length; col++){
+        positions.push({ c: ln[col], col, row, x: col*cw, y: row*ch });
+      }
+      row++;
+    }
+    return { positions, rows: row };
+  }
+
+  function sampleLogoPoints(w,h,count){
+    const c = document.createElement("canvas");
+    c.width=w; c.height=h;
+    const ctx = c.getContext("2d");
+
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle="#000";
+    ctx.fillRect(0,0,w,h);
+
+    const fontSize = Math.floor(Math.min(w,h)*0.16);
+    ctx.font = `900 ${fontSize}px ui-monospace, Menlo, Monaco, Consolas, monospace`;
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.fillStyle="#fff";
+    ctx.fillText(LOGO_TEXT, w/2, h/2);
+
+    const img = ctx.getImageData(0,0,w,h).data;
+
+    const pts = [];
+    const step = Math.max(2, Math.floor(Math.sqrt((w*h)/(count*18))));
+    for (let y=0; y<h; y+=step){
+      for (let x=0; x<w; x+=step){
+        const a = img[(y*w + x)*4 + 3];
+        if (a>10) pts.push({x,y});
+      }
+    }
+
+    if (pts.length > count){
+      const out = [];
+      for (let i=0; i<count; i++) out.push(pts[(Math.random()*pts.length)|0]);
+      return out;
+    }
+    while (pts.length < count){
+      const p = pts[(Math.random()*pts.length)|0] || {x:w/2,y:h/2};
+      pts.push({x:p.x+(Math.random()-0.5)*7, y:p.y+(Math.random()-0.5)*7});
+    }
+    return pts;
+  }
+
+  // ====== state ======
+  let spans = [];
+  let raf = null;
+  let mode = "logo"; // 'logo' or 'layout'
+  let t0 = performance.now();
+
+  function stop(){
+    if (raf) cancelAnimationFrame(raf);
+    raf=null;
+  }
+
+  function clear(){
+    lettersEl.innerHTML="";
+    spans=[];
+  }
+
+  function build(){
+    stop(); clear();
+
+    const {cw,ch} = measureCharBox();
+
+    // 최종 레이아웃의 기준 anchor (top-left)
+    // 박스 없으니 적당히 화면 중앙 쪽으로 배치(필요하면 바꿔)
+    const anchorX = Math.floor(window.innerWidth * 0.12);
+    const anchorY = Math.floor(window.innerHeight * 0.12);
+
+    const {positions, rows} = getFinalPositions(FINAL_TEXT, cw, ch);
+
+    // 로고 샘플링 영역(화면 중앙 근처)
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const pts = sampleLogoPoints(Math.floor(w*0.88), Math.floor(h*0.60), positions.length);
+
+    const logoOffsetX = Math.floor(w*0.06);
+    const logoOffsetY = Math.floor(h*0.18);
+
+    for (let i=0; i<positions.length; i++){
+      const p = positions[i];
+      const s = document.createElement("span");
+      s.className="ch";
+      s.textContent = p.c;
+
+      if ("[]—─".includes(p.c)) s.classList.add("dim");
+      if ("0123456789".includes(p.c)) s.classList.add("muted");
+
+      lettersEl.appendChild(s);
+
+      const pt = pts[i];
+      const logoX = logoOffsetX + pt.x + (Math.random()-0.5)*18;
+      const logoY = logoOffsetY + pt.y + (Math.random()-0.5)*18;
+
+      const layoutX = anchorX + p.x;
+      const layoutY = anchorY + p.y;
+
+      const initX = (mode==="logo") ? logoX : layoutX;
+      const initY = (mode==="logo") ? logoY : layoutY;
+
+      spans.push({
+        el:s,
+        x:initX, y:initY,
+        vx:0, vy:0,
+        // both targets
+        logoX, logoY,
+        layoutX, layoutY,
+        // per-letter character flavor
+        seed: Math.random()*999,
+        jitter: (i/positions.length) + Math.random()*0.6,
+        col: p.col, row: p.row,
+        baseAlpha: 0.85 + Math.random()*0.15
+      });
+
+      s.style.transform = `translate(${initX}px, ${initY}px)`;
+      s.style.opacity = spans[i].baseAlpha.toFixed(3);
+    }
+  }
+
+  function setMode(next){
+    mode = next;
+    triggerBtn.textContent = (mode==="layout") ? "Back to drift" : "Return to layout";
+  }
+
+  function toggleMode(){
+    setMode(mode==="logo" ? "layout" : "logo");
+    // 클릭이 곧 트리거: 그 순간부터 목표가 바뀌면서 이동
+    if (!raf) animate(); // 혹시 멈춰있으면 재시작
+  }
+
+  // ====== animation ======
+  function animate(){
+    stop();
+    t0 = performance.now();
+
+    // spring parameters
+    const k = 28;   // stiffness
+    const d = 13;   // damping
+
+    function frame(now){
+      const t = (now - t0) / 1000;
+
+      // ===== 페이지 전체 유영(카메라 드리프트) =====
+      // 아주 느린 노이즈 기반 이동 + 미세 회전
+      const nx = noise2(t*0.18, 3.1) - 0.5;
+      const ny = noise2(7.7, t*0.18) - 0.5;
+      const rot = (noise2(t*0.10, 9.2)-0.5) * 0.9;
+      world.style.transform =
+        `translate(${nx*18}px, ${ny*14}px) rotate(${rot}deg)`;
+
+      // ===== 글자 유영(모드별) =====
+      // layout 모드: 거의 제자리 + 아주 약한 호흡
+      // logo 모드: 유영(와류 + 난류)
+      let doneCount = 0;
+
+      for (let i=0; i<spans.length; i++){
+        const a = spans[i];
+
+        const tx0 = (mode==="layout") ? a.layoutX : a.logoX;
+        const ty0 = (mode==="layout") ? a.layoutY : a.logoY;
+
+        // “유영” 오프셋
+        // layout에서도 완전 정지 대신 아주 약한 breathing
+        const amp = (mode==="layout") ? 0.55 : 5.2;
+
+        // 와류처럼 천천히 도는 성분
+        const swirl = (mode==="layout") ? 0.25 : 1.0;
+        const sx = Math.sin(t*0.9 + a.seed*0.02 + a.row*0.08) * amp * swirl;
+        const sy = Math.cos(t*0.85 + a.seed*0.018 + a.col*0.06) * amp * swirl;
+
+        // 노이즈 난류 성분(부드럽게)
+        const fx = (noise2(a.seed*0.01 + t*0.35, 2.0) - 0.5) * amp;
+        const fy = (noise2(5.0, a.seed*0.01 + t*0.35) - 0.5) * amp;
+
+        const tx = tx0 + sx + fx;
+        const ty = ty0 + sy + fy;
+
+        const dx = tx - a.x;
+        const dy = ty - a.y;
+
+        const dt = 1/60;
+
+        a.vx += dx * k * dt;
+        a.vy += dy * k * dt;
+
+        a.vx *= Math.exp(-d * dt);
+        a.vy *= Math.exp(-d * dt);
+
+        a.x += a.vx * dt * 60;
+        a.y += a.vy * dt * 60;
+
+        a.el.style.transform = `translate(${a.x}px, ${a.y}px)`;
+
+        // layout 모드에서는 어느 정도 수렴하면 완료 카운트(하지만 breathing 때문에 완전 0은 아님)
+        if (mode==="layout" && Math.abs(dx)<0.6 && Math.abs(dy)<0.6 && Math.abs(a.vx)<0.12 && Math.abs(a.vy)<0.12){
+          doneCount++;
+        }
+      }
+
+      // layout 모드에서도 “유영”을 남기고 싶어서 애니메이션은 계속.
+      // 만약 layout에서 완전 정지하고 싶으면 아래 if로 stop 가능.
+      // if (mode==="layout" && doneCount===spans.length) { stop(); return; }
+
+      raf = requestAnimationFrame(frame);
+    }
+
+    raf = requestAnimationFrame(frame);
+  }
+
+  // ===== interactions =====
+  triggerBtn.addEventListener("click", toggleMode);
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Space"){
+      e.preventDefault();
+      toggleMode();
+    }
+  });
+
+  // 클릭 어디든 트리거(버튼 말고 전체 페이지)
+  window.addEventListener("click", (e) => {
+    // 버튼 클릭은 위에서 처리되니 중복 토글 방지
+    if (e.target === triggerBtn) return;
+    toggleMode();
+  });
+
+  // resize-safe
+  let rTimer=null;
+  window.addEventListener("resize", () => {
+    clearTimeout(rTimer);
+    rTimer=setTimeout(() => {
+      build();
+      if (!raf) animate();
+    }, 120);
+  });
+
+  // init
+  build();
+  animate();
+})();
+</script>
+</body>
+</html>

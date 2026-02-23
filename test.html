@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Single Word (Read-Only Memory)</title>
+  <style>
+    html, body {
+      color:aqua;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<script>
+/* ===== 원문 텍스트 ===== */
+const TEXT = `
+친형과 나는 외할머니를 축구할머니라고 불렀다.
+외할머니는 우리 집에 자주 오시곤 하셨다.
+나는 이야기를 듣는걸 좋아했다.
+평양에서 태어나셨다.
+전쟁소식을 교회에서 들으셨다.
+배를 타고 제주도로 가셨다.
+여동생을 잃으셨다.
+밤을 까면서 이야기를 들었다.
+교회를 열심히 다니셨다.
+지하에 벙커같은 공간이 있었다.
+`;
+
+/* ===== 단어 추출 ===== */
+const WORDS = TEXT
+  .replace(/[^\uAC00-\uD7A3\s]/g, " ")
+  .split(/\s+/)
+  .filter(w => w.length >= 2);
+
+/* ===== 캔버스 ===== */
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resize);
+resize();
+
+/* ===== 랜덤 단어 ===== */
+function randomWord() {
+  return WORDS[Math.floor(Math.random() * WORDS.length)];
+}
+
+/* ===== 현재 단어 ===== */
+let currentWord = randomWord();
+
+/* ===== 그리기 ===== */
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const fontSize = 124; // 큼직하게
+  ctx.font = `${fontSize}px monospace`;
+  ctx.fillStyle = "pink";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ctx.fillText(
+    currentWord,
+    canvas.width / 2,
+    canvas.height / 2
+  );
+}
+
+/* ===== 단어 교체 ===== */
+function next() {
+  currentWord = randomWord();
+  draw();
+}
+
+/* ===== 실행 ===== */
+draw();
+setInterval(next, 1200); // 1.2초마다 교체
+</script>
+</body>
+</html>

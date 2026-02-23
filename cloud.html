@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sticky Blobs — HUGE + Wall Adhesion + Adaptive Resolution</title>
+  <style>
+    html,body{margin:0;height:100%;overflow:hidden;background:#ffffff;}
+    canvas{display:block; touch-action:none;}
+    .ui{
+      position:fixed; left:16px; right:16px; bottom:14px;
+      display:flex; justify-content:space-between; gap:12px;
+      font:12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      color:rgba(255, 255, 255, 0.55);
+      pointer-events:none;
+      user-select:none;
+    }
+    .pill{
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgb(255, 255, 255);
+      background:rgba(76, 0, 255, 0.78);
+      backdrop-filter: blur(6px);
+    }
+  </style>
+</head>
+<body>
+  <div class="ui">
+    <div class="pill">drag: grab • release: inertia</div>
+    <div class="pill">wall: cling+adhere • adaptive-res • space: reset</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+  <script>
+    /**
+     * ✅ 포함된 것
+     * - 흰 배경 / 검정 찐득이 메타볼
+     * - HUGE 스케일(모바일/데스크탑 반응형)
+     * - 벽에서 bounce X → 붙음(cling) + 벽으로 끌림(adhesion) + 미세 홀드(hold)
+     * - 드래그로 잡아 움직임 + 놓으면 관성
+     * - 해상도(RES) 부담 줄이기: FPS 기반 적응형 버퍼 해상도(adaptive RES)
+     * - 약간 랜덤 크기(r per blob)
+     */
+
+    // ============ state ============
+    let blobs = [];
+    let drift, driftTarget;
+    let pg;
+
+    // drag state
+    let grabbed = -1;
+    let grabOffset, prevMouse;
+
+    // responsive params
+    let P = {};
+
+    // adaptive resolution
+    let targetRes = 2.8;      // 현재 목표 RES
+    const RES_HI = 2.1;       // 고해상도(작을수록 더 선명)
+    const RES_MID = 2.6;
+    const RES_LO = 3.2;       // 저해상도(클수록 가벼움)
+    const RES_LO_MOBILE = 3.8;
+
+    function isMobileLike(){
+      return (window.innerWidth <= 760) || ('ontouchstart' in window);
+    }
+
+    function computeParams(){
+      const m = isMobileLike();
+      const s = Math.min(window.innerWidth, window.innerHeight);
+
+      // =========================
+      // HUGE SIZE (원하는 만큼 조절)
+      // =========================
+      const Rbase = m ? Math.round(s * 0.55) : Math.round(s * 0.42);
+      const R = constrain(Rbase, m ? 90 : 120, m ? 420 : 520);
+
+      // RES는 targetRes를 사용(적응형)
+      const RES = targetRes;
+
+      // 덩어리 커지면 THRESH 낮춰서 "살" 채우기
+      const THRESH = m ? 0.88 : 0.90;
+
+      // 큰 덩어리일수록 느리게
+      const MAX_V = m ? 0.45 : 0.60;
+      const DAMP  = m ? 0.988 : 0.987;
+
+      // cohesion
+      const STICK_RANGE = Math.round(R * (m ? 2.0 : 2.2));
+      const STICK_PULL  = m ? 0.00075 : 0.00085;
+
+      // wall cling + adhesion
+      const WALL_ZONE      = m ? 110 : 95;
+      const WALL_STICK     = m ? 0.90 : 0.86; // normal 속도 흡수
+      const WALL_FRICTION  = m ? 0.93 : 0.91; // 미끄럼
+      const WALL_PUSH      = m ? 0.060 : 0.055; // 파고들 때만 부드럽게 밀기(튀김 방지)
+
+      const WALL_ADHESION  = m ? 0.020 : 0.016; // 벽으로 끌어당기는 힘
+      const WALL_HOLD      = m ? 0.020 : 0.016; // 벽에 "붙어있게" 위치를 살짝 홀드
+
+      // drag
+      const GRAB_RADIUS = Math.round(R * (m ? 0.95 : 0.85));
+      const DRAG_STIFF  = m ? 0.20 : 0.22;
+      const DRAG_DAMP   = m ? 0.74 : 0.76;
+      const RELEASE_INERTIA = m ? 0.025 : 0.030;
+
+      // r randomness (너무 크면 깨지니 좁게)
+      const SIZE_JITTER_MIN = 0.92;
+      const SIZE_JITTER_MAX = 1.08;
+
+      return {
+        mobile: m,
+        N: m ? 3 : 4,
+        R,
+        RES,
+        THRESH,
+        MAX_V, DAMP,
+        STICK_RANGE, STICK_PULL,
+        WALL_ZONE, WALL_STICK, WALL_FRICTION, WALL_PUSH,
+        WALL_ADHESION, WALL_HOLD,
+        GRAB_RADIUS, DRAG_STIFF, DRAG_DAMP, RELEASE_INERTIA,
+        SIZE_JITTER_MIN, SIZE_JITTER_MAX
+      };
+    }
+
+    function setup(){
+      createCanvas(windowWidth, windowHeight);
+      pixelDensity(1);
+
+      // initial targetRes
+      targetRes = isMobileLike() ? 3.2 : 2.6;
+
+      P = computeParams();
+
+      // gentle drift
+      drift = createVector(0.03, 0.006);
+      driftTarget = drift.copy();
+
+      initBlobs();
+      initBuffer();
+
+      grabOffset = createVector(0,0);
+      prevMouse = createVector(mouseX, mouseY);
+    }
+
+    function initBuffer(){
+      const w = Math.max(1, Math.floor(windowWidth / P.RES));
+      const h = Math.max(1, Math.floor(windowHeight / P.RES));
+      pg = createGraphics(w, h);
+      pg.pixelDensity(1);
+      pg.noSmooth();
+    }
+
+    function initBlobs(){
+      blobs = [];
+      for (let i=0;i<P.N;i++){
+        const sizeJitter = random(P.SIZE_JITTER_MIN, P.SIZE_JITTER_MAX);
+        const r = P.R * sizeJitter;
+
+        // HUGE일수록 pad를 줄여야 "벽에 닿는 실루엣"
+        const pad = r * 0.10;
+
+        blobs.push({
+          pos: createVector(
+            random(pad, width - pad),
+            random(pad, height - pad)
+          ),
+          vel: createVector(
+            random(-0.35,0.35) * (P.mobile ? 0.8 : 1.0),
+            random(-0.28,0.28) * (P.mobile ? 0.8 : 1.0)
+          ),
+          r
+        });
+      }
+    }
+
+    function windowResized(){
+      resizeCanvas(windowWidth, windowHeight);
+
+      // 모바일 기준 RES 기본값도 다시 잡기
+      targetRes = isMobileLike() ? 3.2 : 2.6;
+
+      P = computeParams();
+      initBuffer();
+
+      if (blobs.length !== P.N){
+        initBlobs();
+        return;
+      }
+
+      for (const b of blobs){
+        const pad = b.r * 0.10;
+        b.pos.x = constrain(b.pos.x, pad, width - pad);
+        b.pos.y = constrain(b.pos.y, pad, height - pad);
+        b.vel.x = constrain(b.vel.x, -P.MAX_V, P.MAX_V);
+        b.vel.y = constrain(b.vel.y, -P.MAX_V, P.MAX_V);
+      }
+    }
+
+    function draw(){
+      // ---- adaptive resolution (FPS 기반)
+      if (frameCount % 12 === 0){
+        const fps = frameRate();
+        const mobile = P.mobile;
+
+        let want = RES_MID;
+        if (fps < 40) want = mobile ? RES_LO_MOBILE : RES_LO;
+        else if (fps < 55) want = RES_MID;
+        else want = RES_HI;
+
+        if (Math.abs(targetRes - want) > 0.08){
+          targetRes = want;
+          P = computeParams();    // RES 반영
+          initBuffer();           // 버퍼만 재생성
+        }
+      }
+
+      drift.x = lerp(drift.x, driftTarget.x, 0.02);
+      drift.y = lerp(drift.y, driftTarget.y, 0.02);
+
+      background(0, 255, 255, 0.78);
+
+      updateBlobs();
+      renderMetaballs();
+      image(pg, 0, 0, width, height);
+
+      prevMouse.set(mouseX, mouseY);
+    }
+
+    // ============ physics ============
+    function updateBlobs(){
+      // cohesion
+      for (let i=0;i<blobs.length;i++){
+        for (let j=i+1;j<blobs.length;j++){
+          const a = blobs[i], b = blobs[j];
+          const dx = b.pos.x - a.pos.x;
+          const dy = b.pos.y - a.pos.y;
+          const d = Math.sqrt(dx*dx + dy*dy) + 1e-6;
+
+          if (d < P.STICK_RANGE){
+            const s = (1 - d / P.STICK_RANGE);
+            const sizeBias = (a.r + b.r) / (2 * P.R);
+            const f = P.STICK_PULL * sizeBias * s * s;
+
+            const fx = (dx / d) * f;
+            const fy = (dy / d) * f;
+            a.vel.x += fx; a.vel.y += fy;
+            b.vel.x -= fx; b.vel.y -= fy;
+          }
+        }
+      }
+
+      // move
+      for (let i=0;i<blobs.length;i++){
+        const b = blobs[i];
+
+        if (i === grabbed){
+          const target = createVector(mouseX, mouseY).add(grabOffset);
+          const dx = target.x - b.pos.x;
+          const dy = target.y - b.pos.y;
+
+          b.vel.x = b.vel.x * P.DRAG_DAMP + dx * P.DRAG_STIFF * 0.12;
+          b.vel.y = b.vel.y * P.DRAG_DAMP + dy * P.DRAG_STIFF * 0.12;
+
+          b.pos.add(b.vel);
+          wallAdhere(b);
+          continue;
+        }
+
+        b.vel.x += drift.x * 0.01;
+        b.vel.y += drift.y * 0.01;
+
+        b.vel.mult(P.DAMP);
+
+        b.vel.x = constrain(b.vel.x, -P.MAX_V, P.MAX_V);
+        b.vel.y = constrain(b.vel.y, -P.MAX_V, P.MAX_V);
+
+        b.pos.add(b.vel);
+        wallAdhere(b);
+      }
+    }
+
+    function wallAdhere(b){
+      // pad small => silhouette touches wall
+      const pad = b.r * 0.10;
+
+      // LEFT
+      const dl = b.pos.x - pad;
+      if (dl < P.WALL_ZONE){
+        const t = constrain(1 - dl / P.WALL_ZONE, 0, 1);
+
+        if (dl < 0) b.pos.x += (-dl) * P.WALL_PUSH;
+
+        // 기존: 법선 속도 흡수 + 접선 마찰
+        if (b.vel.x < 0) b.vel.x *= (1 - P.WALL_STICK * t);
+        b.vel.y *= lerp(1, P.WALL_FRICTION, t);
+
+        // ✅ 추가: 벽으로 끌어당김 + 미세 홀드
+        b.vel.x -= P.WALL_ADHESION * t;
+        b.pos.x = lerp(b.pos.x, pad, P.WALL_HOLD * t);
+      }
+
+      // RIGHT
+      const dr = (width - pad) - b.pos.x;
+      if (dr < P.WALL_ZONE){
+        const t = constrain(1 - dr / P.WALL_ZONE, 0, 1);
+
+        if (dr < 0) b.pos.x -= (-dr) * P.WALL_PUSH;
+
+        if (b.vel.x > 0) b.vel.x *= (1 - P.WALL_STICK * t);
+        b.vel.y *= lerp(1, P.WALL_FRICTION, t);
+
+        b.vel.x += P.WALL_ADHESION * t;
+        b.pos.x = lerp(b.pos.x, width - pad, P.WALL_HOLD * t);
+      }
+
+      // TOP
+      const dt = b.pos.y - pad;
+      if (dt < P.WALL_ZONE){
+        const t = constrain(1 - dt / P.WALL_ZONE, 0, 1);
+
+        if (dt < 0) b.pos.y += (-dt) * P.WALL_PUSH;
+
+        if (b.vel.y < 0) b.vel.y *= (1 - P.WALL_STICK * t);
+        b.vel.x *= lerp(1, P.WALL_FRICTION, t);
+
+        b.vel.y -= P.WALL_ADHESION * t;
+        b.pos.y = lerp(b.pos.y, pad, P.WALL_HOLD * t);
+      }
+
+      // BOTTOM
+      const db = (height - pad) - b.pos.y;
+      if (db < P.WALL_ZONE){
+        const t = constrain(1 - db / P.WALL_ZONE, 0, 1);
+
+        if (db < 0) b.pos.y -= (-db) * P.WALL_PUSH;
+
+        if (b.vel.y > 0) b.vel.y *= (1 - P.WALL_STICK * t);
+        b.vel.x *= lerp(1, P.WALL_FRICTION, t);
+
+        b.vel.y += P.WALL_ADHESION * t;
+        b.pos.y = lerp(b.pos.y, height - pad, P.WALL_HOLD * t);
+      }
+
+      // gentle clamp
+      b.pos.x = constrain(b.pos.x, pad - 3, width - pad + 3);
+      b.pos.y = constrain(b.pos.y, pad - 3, height - pad + 3);
+    }
+
+    // ============ render ============
+    function renderMetaballs(){
+      const w = pg.width, h = pg.height;
+      pg.loadPixels();
+      const pix = pg.pixels;
+
+      const sx = w / width;
+      const sy = h / height;
+
+      let idx = 0;
+      for (let y=0; y<h; y++){
+        for (let x=0; x<w; x++){
+          let field = 0;
+          const px = x / sx;
+          const py = y / sy;
+
+          for (let k=0;k<blobs.length;k++){
+            const b = blobs[k];
+            const dx = px - b.pos.x;
+            const dy = py - b.pos.y;
+            const d2 = dx*dx + dy*dy + 0.0001;
+            field += (b.r * b.r) / d2;
+          }
+
+          const norm = field / (blobs.length * 1.6);
+
+          let a = 0;
+          if (norm >= P.THRESH){
+            // 경계 더 또렷하게(체감 해상도↑)
+            const edge = constrain((norm - P.THRESH) / 0.22, 0, 1);
+            a = 255 * (0.78 + 0.22*edge);
+          }
+          pix[idx++] = 0;
+        pix[idx++] = 255;
+        pix[idx++] = 0;
+          pix[idx++] = a;
+        }
+      }
+      pg.updatePixels();
+
+      // subtle deepen pass (체감 디테일↑)
+      pg.push();
+      pg.blendMode(MULTIPLY);
+      pg.tint(0,0,0, 22);
+      pg.image(pg, 0, 0);
+      pg.pop();
+    }
+
+    // ============ interaction ============
+    function mousePressed(){
+      prevMouse.set(mouseX, mouseY);
+
+      grabbed = findNearestBlob(mouseX, mouseY, P.GRAB_RADIUS);
+      if (grabbed !== -1){
+        const b = blobs[grabbed];
+        grabOffset = p5.Vector.sub(b.pos, createVector(mouseX, mouseY));
+      }
+    }
+
+    function mouseReleased(){
+      if (grabbed !== -1){
+        const b = blobs[grabbed];
+        const mv = createVector(mouseX - prevMouse.x, mouseY - prevMouse.y);
+        b.vel.add(mv.mult(P.RELEASE_INERTIA));
+      }
+      grabbed = -1;
+    }
+
+    function findNearestBlob(x,y, radius){
+      let best = -1;
+      let bestD = radius;
+      for (let i=0;i<blobs.length;i++){
+        const b = blobs[i];
+        const d = dist(x,y,b.pos.x,b.pos.y);
+        if (d < bestD){
+          bestD = d;
+          best = i;
+        }
+      }
+      return best;
+    }
+
+    function keyPressed(){
+      if (key === ' '){
+        P = computeParams();
+        initBlobs();
+      }
+    }
+
+    function touchStarted(){ mousePressed(); return false; }
+    function touchEnded(){ mouseReleased(); return false; }
+  </script>
+</body>
+</html>

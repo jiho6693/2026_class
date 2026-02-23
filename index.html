@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI & Visualization — ASCII Syllabus</title>
+  <meta name="description" content="AI & Visualization course site (ASCII-first, responsive)" />
+  <style>
+    :root{
+      --bg:#0b0f0c;
+      --fg:#d8f7de;
+      --muted:#9fd3a9;
+      --dim:#6aa879;
+      --line:#1e3a2a;
+      --accent:#7cffb0;
+      --danger:#ff6b6b;
+      --warn:#ffd166;
+      --ok:#9bff6a;
+
+      /* layout */
+      --max: 1100px;
+      --pad: clamp(14px, 3vw, 22px);
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: var(--mono);
+      background: radial-gradient(1200px 600px at 30% -10%, rgba(124,255,176,.10), transparent 55%),
+                  radial-gradient(900px 500px at 90% 0%, rgba(255,209,102,.06), transparent 50%),
+                  var(--bg);
+      color:var(--fg);
+      line-height:1.6;
+    }
+
+    a{ color:var(--accent); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+
+    .wrap{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: var(--pad);
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.25);
+      backdrop-filter: blur(6px);
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .dot{
+      width:10px;height:10px;border-radius:50%;
+      background: var(--accent);
+      box-shadow: 0 0 16px rgba(124,255,176,.35);
+      flex: 0 0 auto;
+    }
+    .brand-title{
+      font-weight: 700;
+      letter-spacing: .5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .brand-sub{
+      color: var(--muted);
+      font-size: 12px;
+      margin-left: 10px;
+      opacity:.9;
+      white-space: nowrap;
+    }
+
+    .nav{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .nav a{
+      padding: 6px 10px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      color: var(--fg);
+    }
+    .nav a:hover{
+      border-color: var(--line);
+      text-decoration:none;
+      background: rgba(124,255,176,.06);
+    }
+
+    .btn{
+      cursor:pointer;
+      font-family: var(--mono);
+      background: rgba(124,255,176,.08);
+      color: var(--fg);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 7px 10px;
+    }
+    .btn:hover{ background: rgba(124,255,176,.14); }
+
+    .hero{
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.22);
+      overflow:hidden;
+    }
+
+    .ascii{
+      margin: 0;
+      padding: 12px 12px 0 12px;
+      font-size: 13px;
+      color: var(--fg);
+      white-space: pre;
+      overflow-x:auto;
+      -webkit-overflow-scrolling: touch;
+      border-bottom: 1px dashed rgba(106,168,121,.35);
+    }
+    .hero-body{
+      padding: 12px;
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 12px;
+    }
+    .hero p{ margin: 0 0 10px 0; color: var(--muted); }
+    .pillrow{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .pill{
+      border: 1px solid var(--line);
+      color: var(--fg);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: rgba(0,0,0,.15);
+    }
+    .panel{
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.18);
+      padding: 12px;
+    }
+    .panel h3{
+      margin:0 0 10px 0;
+      font-size: 13px;
+      color: var(--fg);
+      letter-spacing: .4px;
+    }
+    .kv{
+      display:grid;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .kv .row{
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      border-bottom: 1px dotted rgba(106,168,121,.35);
+      padding-bottom: 6px;
+    }
+    .kv .k{ color: var(--dim); }
+    .kv .v{ color: var(--fg); }
+
+    .grid{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .card{
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.18);
+      padding: 12px;
+      min-width: 0;
+    }
+    .card h3{
+      margin:0 0 8px 0;
+      font-size: 13px;
+      letter-spacing: .4px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 8px;
+    }
+    .badge{
+      font-size: 11px;
+      padding: 2px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+    }
+    .list{
+      margin:0;
+      padding:0;
+      list-style:none;
+      display:grid;
+      gap: 8px;
+    }
+    .item{
+      border: 1px dashed rgba(106,168,121,.35);
+      border-radius: 12px;
+      padding: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .item b{ color: var(--fg); }
+    .meta{
+      margin-top: 6px;
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 11px;
+      color: var(--dim);
+    }
+    .tag{
+      border: 1px solid rgba(106,168,121,.35);
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: rgba(124,255,176,.05);
+      color: var(--muted);
+    }
+
+    .section{
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.18);
+      overflow:hidden;
+    }
+    .section-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(106,168,121,.25);
+    }
+    .section-header h2{
+      margin:0;
+      font-size: 13px;
+      letter-spacing: .4px;
+    }
+    .controls{
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content:flex-end;
+      align-items:center;
+    }
+    .input{
+      font-family: var(--mono);
+      background: rgba(0,0,0,.25);
+      border: 1px solid var(--line);
+      color: var(--fg);
+      border-radius: 10px;
+      padding: 8px 10px;
+      width: min(360px, 65vw);
+    }
+    .weeklist{
+      padding: 12px;
+      display:grid;
+      gap: 10px;
+    }
+    .week{
+      border: 1px dashed rgba(106,168,121,.35);
+      border-radius: 14px;
+      padding: 10px;
+      display:grid;
+      grid-template-columns: 100px 1fr;
+      gap: 10px;
+    }
+    .week .wcode{
+      color: var(--accent);
+      font-weight:700;
+      font-size: 12px;
+    }
+    .week .title{
+      font-size: 13px;
+      color: var(--fg);
+      margin-bottom: 4px;
+    }
+    .week .desc{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .week .chips{
+      margin-top: 6px;
+      display:flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .footer{
+      margin: 16px 0 30px 0;
+      color: var(--dim);
+      font-size: 12px;
+      text-align:center;
+      opacity:.95;
+    }
+
+    /* Mobile */
+    @media (max-width: 900px){
+      .hero-body{ grid-template-columns: 1fr; }
+      .grid{ grid-template-columns: 1fr; }
+      .week{ grid-template-columns: 90px 1fr; }
+    }
+
+    /* Very small screens: allow ascii to be smaller */
+    @media (max-width: 420px){
+      .ascii{ font-size: 11px; }
+      .brand-sub{ display:none; }
+      .nav{ display:none; }
+      .nav.open{ display:flex; }
+    }
+
+    /* Reduce motion for accessibility */
+    @media (prefers-reduced-motion: reduce){
+      *{ scroll-behavior:auto !important; }
+    }
+
+    /* Tiny CRT vibe toggle */
+    body.crt::before{
+      content:"";
+      position: fixed; inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(rgba(255,255,255,.03), rgba(255,255,255,0) 55%),
+        repeating-linear-gradient(0deg, rgba(0,0,0,.0), rgba(0,0,0,.0) 2px, rgba(0,0,0,.16) 3px);
+      mix-blend-mode: overlay;
+      opacity:.25;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="dot" aria-hidden="true"></span>
+        <div class="brand-title">AI & Visualization</div>
+        <div class="brand-sub">ASCII-first course site</div>
+      </div>
+
+      <nav class="nav" id="nav">
+        <a href="#home">HOME</a>
+        <a href="#weeks">WEEKS</a>
+        <a href="#projects">PROJECTS</a>
+        <a href="#resources">RESOURCES</a>
+      </nav>
+
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn" id="menuBtn" aria-label="Toggle menu" style="display:none;">MENU</button>
+        <button class="btn" id="crtBtn" title="CRT overlay toggle">CRT</button>
+        <button class="btn" id="promptBtn" title="Random prompt">RND</button>
+      </div>
+    </header>
+
+    <main id="home" class="hero" role="main">
+<pre class="ascii" id="asciiHeader">
+  ___    ___   ______    __      __   ______   ______    _______    ______
+ /   \  /   \ /      \  /  \    /  | /      \ /      \  /       \  /      \
+$$$  \$$$  $$|  $$$$$$\ $$  \  /$$/ /$$$$$$  |$$$$$$  |$$$$$$$  |/$$$$$$  |
+$$$$  $$$$  $$| $$__| $$  $$  /$$/  $$ \__$$/  /    $$|$$ |  $$ |$$ |  $$ |
+$$ $$ $$ $$ $$| $$    $$  $$ /$$/   $$      \ /$$$$$$$|$$ |  $$ |$$ |  $$ |
+$$ |$$$| $$ |$$| $$$$$$$$   $$$$/     $$$$$$  $$ |  $$|$$ |  $$ |$$ |  $$ |
+$$ | $ | $$ |$$| $$  | $$    $$      /  \__$$ $$ \__$$|$$ |__$$ |$$ \__$$ |
+$$/      $$ /$$| $$  | $$    $$      $$    $$/$$    $$|$$    $$/ $$    $$/
+            $$|__/  |__/    __/       $$$$$$/  $$$$$$$/ $$$$$$$/   $$$$$$/
+                         |__/
+ ───────────────────────────────────────────────────────────────────────────
+  COURSE: "How does a computer 'see'?" + "How do we visualize belief systems?"
+  MODE:  [lecture] [discussion] [workshop] [studio]   FORMAT: ASCII + LINKS
+</pre>
+
+      <div class="hero-body">
+        <div>
+          <p>
+            이 사이트는 “수업 안내 페이지”이면서 동시에 작은 시각화 장치야.
+            주차/리딩/과제를 <b>텍스트 기반(ASCII)</b>으로 최대한 가볍게 유지하고,
+            필요한 곳에만 인터랙션을 넣었어.
+          </p>
+
+          <div class="pillrow">
+            <span class="pill">#data</span>
+            <span class="pill">#vision</span>
+            <span class="pill">#bias</span>
+            <span class="pill">#compression</span>
+            <span class="pill">#diffusion</span>
+            <span class="pill">#archive</span>
+          </div>
+
+          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+            <a class="btn" href="#weeks">> GO TO WEEKS</a>
+            <a class="btn" href="#projects">> PROJECTS</a>
+            <a class="btn" href="#resources">> RESOURCES</a>
+          </div>
+        </div>
+
+        <aside class="panel" aria-label="This week panel">
+          <h3>THIS WEEK</h3>
+          <div class="kv">
+            <div class="row"><span class="k">Week</span><span class="v" id="thisWeek">WEEK 03</span></div>
+            <div class="row"><span class="k">Topic</span><span class="v" id="thisTopic">Compression & Visibility</span></div>
+            <div class="row"><span class="k">Due</span><span class="v"><span style="color:var(--warn)">Mini 01</span> — Fri 23:59</span></div>
+            <div class="row"><span class="k">Mode</span><span class="v">Workshop + Discussion</span></div>
+          </div>
+          <div style="margin-top:10px; font-size:11px; color:var(--dim);">
+            TIP: 상단 <b>RND</b> 버튼을 누르면 과제 프롬프트가 랜덤 생성돼.
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <section class="grid" aria-label="Quick cards">
+      <div class="card">
+        <h3>UPDATES <span class="badge">LIVE</span></h3>
+        <ul class="list">
+          <li class="item"><b>공지</b> — p5.js / Python 설치 가이드 추가 <div class="meta"><span class="tag">#setup</span></div></li>
+          <li class="item"><b>토론</b> — “데이터는 믿음의 장치인가?” <div class="meta"><span class="tag">#ethics</span><span class="tag">#belief</span></div></li>
+          <li class="item"><b>워크샵</b> — 오류를 시각화하기 <div class="meta"><span class="tag">#glitch</span></div></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>DUE SOON <span class="badge">3 ITEMS</span></h3>
+        <ul class="list">
+          <li class="item"><b>Mini 01</b> — “압축을 3가지 규칙으로 보여주기” <div class="meta"><span class="tag">#compression</span><span class="tag">#rules</span></div></li>
+          <li class="item"><b>Reading</b> — “Seeing Like a System” (excerpt) <div class="meta"><span class="tag">#reading</span></div></li>
+          <li class="item"><b>Post</b> — 5문장 리플렉션 <div class="meta"><span class="tag">#writing</span></div></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>ASCII TOOLS <span class="badge">FUN</span></h3>
+        <ul class="list">
+          <li class="item"><b>CRT</b> — 스캔라인/필름 오버레이 토글</li>
+          <li class="item"><b>RND</b> — 랜덤 과제 프롬프트 생성</li>
+          <li class="item"><b>FILTER</b> — 태그/검색으로 주차 필터링</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="weeks" class="section">
+      <div class="section-header">
+        <h2>WEEKS / ASCII INDEX</h2>
+        <div class="controls">
+          <input class="input" id="search" placeholder="검색: diffusion, archive, bias, compression..." />
+          <button class="btn" id="clearBtn">CLEAR</button>
+        </div>
+      </div>
+      <div class="weeklist" id="weeklist"></div>
+    </section>
+
+    <section id="projects" class="section">
+      <div class="section-header">
+        <h2>PROJECTS</h2>
+        <div class="controls">
+          <span class="badge">SAMPLE</span>
+        </div>
+      </div>
+      <div style="padding:12px; display:grid; gap:10px;">
+        <div class="week">
+          <div class="wcode">MINI 01</div>
+          <div>
+            <div class="title">Compression as Aesthetic Rule</div>
+            <div class="desc">하나의 이미지를 “압축 규칙 3개”로 다시 그려서, 손실/잔상/전송을 드러내기.</div>
+            <div class="chips">
+              <span class="tag">#compression</span><span class="tag">#rules</span><span class="tag">#visualization</span>
+            </div>
+          </div>
+        </div>
+        <div class="week">
+          <div class="wcode">MID</div>
+          <div>
+            <div class="title">Dataset ↔ Interface</div>
+            <div class="desc">수집한 데이터셋을 “보는 방식” 자체가 되도록 인터페이스를 설계.</div>
+            <div class="chips">
+              <span class="tag">#archive</span><span class="tag">#interface</span><span class="tag">#ethics</span>
+            </div>
+          </div>
+        </div>
+        <div class="week">
+          <div class="wcode">FINAL</div>
+          <div>
+            <div class="title">Visualization of Belief Systems</div>
+            <div class="desc">예측/예보/확률/제의가 작동하는 방식 자체를 시각 시스템으로 만들기.</div>
+            <div class="chips">
+              <span class="tag">#belief</span><span class="tag">#simulation</span><span class="tag">#critique</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="resources" class="section">
+      <div class="section-header">
+        <h2>RESOURCES</h2>
+        <div class="controls">
+          <span class="badge">LINKS</span>
+        </div>
+      </div>
+      <div style="padding:12px; display:grid; gap:10px; font-size:12px; color:var(--muted);">
+        <div class="item">
+          <b>Setup</b> — Python / p5.js / Jupyter / VSCode<br/>
+          <span style="color:var(--dim)">→</span> “Tool Setup Doctor” 같은 섹션으로 확장 가능
+        </div>
+        <div class="item">
+          <b>Readings</b> — bias, vision, compression, archive, ethics<br/>
+          <span style="color:var(--dim)">→</span> 용어 hover(Glossary) 넣기 좋음
+        </div>
+        <div class="item">
+          <b>Examples</b> — exhibition refs / artists / datasets<br/>
+          <span style="color:var(--dim)">→</span> 모자이크 갤러리(학생 작업)로 연결 가능
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      ASCII-first template · works on desktop & mobile · no framework · localStorage progress ready
+    </div>
+  </div>
+
+  <script>
+    // Mobile menu button visibility
+    const menuBtn = document.getElementById('menuBtn');
+    const nav = document.getElementById('nav');
+    const mq = window.matchMedia('(max-width: 420px)');
+    function handleMQ(){
+      if(mq.matches){
+        menuBtn.style.display = 'inline-block';
+        nav.classList.remove('open');
+      }else{
+        menuBtn.style.display = 'none';
+        nav.classList.remove('open');
+      }
+    }
+    handleMQ();
+    mq.addEventListener('change', handleMQ);
+    menuBtn.addEventListener('click', () => nav.classList.toggle('open'));
+
+    // CRT toggle
+    const crtBtn = document.getElementById('crtBtn');
+    const CRT_KEY = 'ascii_course_crt';
+    function setCRT(on){
+      document.body.classList.toggle('crt', on);
+      localStorage.setItem(CRT_KEY, on ? '1' : '0');
+    }
+    setCRT(localStorage.getItem(CRT_KEY) === '1');
+    crtBtn.addEventListener('click', () => {
+      setCRT(!document.body.classList.contains('crt'));
+    });
+
+    // Random prompt button
+    const promptBtn = document.getElementById('promptBtn');
+    const prompts = [
+      "3개의 규칙만으로 '압축'을 시각화하라. (색/해상도/샘플링 중 택2)",
+      "오류 메시지(log)를 데이터로 바꾸고, 그것의 리듬을 화면에 출력하라.",
+      "하루치 데이터(날씨/환율/텍스트)로 '믿음'이 어떻게 수행되는지 보여줘라.",
+      "하나의 이미지 파일을 20번 저장/재압축하고, 손실의 패턴을 지도처럼 기록하라.",
+      "모델의 '확신도'를 시각화하라. (확률을 감정처럼 보이게 만들기)",
+      "데이터셋을 '아카이브'로 만들지 말고, '인터페이스'로 만들어라.",
+      "픽셀을 노동처럼 다뤄라: 한 번에 1줄만 바뀌는 화면을 10분간 유지해라.",
+    ];
+    promptBtn.addEventListener('click', () => {
+      const p = prompts[Math.floor(Math.random() * prompts.length)];
+      alert("RANDOM PROMPT:\n\n" + p);
+    });
+
+    // Sample week data
+    const weeks = [
+      { code:"WEEK 01", title:"How computers 'see' images", desc:"픽셀/행렬/채널/좌표 — 이미지를 데이터로 읽는 최소 단위.", tags:["data","vision","pixels"] },
+      { code:"WEEK 02", title:"Visualization grammar", desc:"그래프가 설득하는 방식: 축/스케일/정렬/전달과 오해.", tags:["visualization","semiotics","charts"] },
+      { code:"WEEK 03", title:"Compression & visibility", desc:"손실, 잔상, 전송: 이미지가 '존재'하는 조건을 압축에서 읽기.", tags:["compression","logistics","ethics"] },
+      { code:"WEEK 04", title:"Datasets as archives", desc:"수집/분류/메타데이터/누락 — 데이터셋을 만드는 행위의 정치.", tags:["archive","dataset","bias"] },
+      { code:"WEEK 05", title:"Bias & evaluation", desc:"편향은 어디에 있고, 우리는 무엇을 측정하는가?", tags:["bias","metrics","ethics"] },
+      { code:"WEEK 06", title:"Latent space intuition", desc:"잠재공간을 '지도'로 만들기: 거리/클러스터/보간.", tags:["latent","embedding","visualization"] },
+      { code:"WEEK 07", title:"Diffusion for drawings", desc:"노이즈→형상: 생성의 시간 구조를 시각 시스템으로 만들기.", tags:["diffusion","generation","noise"] },
+      { code:"WEEK 08", title:"Interfaces & control", desc:"슬라이더/토글/로그: 조작 가능한 시각화와 책임.", tags:["interface","control","ui"] },
+    ];
+
+    const weeklist = document.getElementById('weeklist');
+    function render(list){
+      weeklist.innerHTML = "";
+      list.forEach(w => {
+        const el = document.createElement('div');
+        el.className = 'week';
+        el.dataset.tags = w.tags.join(' ');
+        el.innerHTML = `
+          <div class="wcode">${w.code}</div>
+          <div>
+            <div class="title">${escapeHTML(w.title)}</div>
+            <div class="desc">${escapeHTML(w.desc)}</div>
+            <div class="chips">
+              ${w.tags.map(t => `<span class="tag">#${escapeHTML(t)}</span>`).join("")}
+            </div>
+          </div>
+        `;
+        weeklist.appendChild(el);
+      });
+    }
+
+    function escapeHTML(str){
+      return str.replace(/[&<>"']/g, (m) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[m]));
+    }
+
+    render(weeks);
+
+    // Search filter
+    const search = document.getElementById('search');
+    const clearBtn = document.getElementById('clearBtn');
+
+    function filter(){
+      const q = (search.value || "").trim().toLowerCase();
+      const filtered = weeks.filter(w => {
+        const hay = (w.code + " " + w.title + " " + w.desc + " " + w.tags.join(" ")).toLowerCase();
+        return hay.includes(q);
+      });
+      render(filtered);
+    }
+    search.addEventListener('input', filter);
+    clearBtn.addEventListener('click', () => { search.value=""; filter(); });
+
+    // Set "This Week" from data
+    const thisWeek = document.getElementById('thisWeek');
+    const thisTopic = document.getElementById('thisTopic');
+    thisWeek.textContent = weeks[2].code;
+    thisTopic.textContent = weeks[2].title;
+  </script>
+</body>
+</html>
