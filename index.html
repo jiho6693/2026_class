@@ -6,71 +6,69 @@
   <link rel="stylesheet" href="https://use.typekit.net/fzx3fof.css">
   <title>AI</title>
 
-  <!-- (옵션) 모바일 리다이렉트 유지 -->
-  <script>
-    var UserAgent = navigator.userAgent;
-    if (
-      UserAgent.match(/iPhone|Android|Windows CE|BlackBerry|Symbian|Windows Phone|webOS|Opera Mini|Opera Mobi|POLARIS|IEMobile|lgtelecom|nokia|SonyEricsson/i) != null
-      || UserAgent.match(/LG|SAMSUNG|Samsung/) != null
-    ) {
-      // location.href = "index_mb.html"; // 필요할 때만 켜
-    }
-  </script>
-
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Kenia&family=Oswald:wght@500&family=Sulphur+Point:wght@700&family=Teko:wght@500&display=swap');
-   
-    :root{ --bg: rgb(0, 0, 0); --ink: #fff; --rule: rgba(255,255,255,.22); }
 
-    html,body{height:100%;}
+    :root{
+      --bg: #000;
+      --ink: #fff;
+      --rule: rgba(255,255,255,.22);
+      --pad: 16px;
+      --panelW: 820px;
+    }
+
+    html, body { height: 100%; }
     body{
       margin:0;
       overflow:hidden;
       touch-action:none;
       background: var(--bg);
       color: var(--ink);
-      font-family: "input-sans", sans-serif;
+      font-family: "input-sans", system-ui, -apple-system, "Noto Sans KR", Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       font-weight: 400;
       font-style: normal;
     }
 
-    a:link, a:visited, a:hover, a:active { text-decoration:none; color:inherit; }
+    a{ color:inherit; text-decoration:none; }
 
-    /* 좌하단 타이틀 */
+    /* ====== Top bar (responsive) ====== */
+    .topbar{
+      position:fixed;
+      top: 14px;
+      left: var(--pad);
+      right: var(--pad);
+      display:flex;
+      justify-content:flex-end;
+      gap: 14px;
+      z-index: 6;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .topbar .item{
+      font-size: 1rem;
+      white-space:nowrap;
+      cursor:pointer;
+      opacity:.95;
+    }
+    .topbar .item:hover{ opacity:1; }
+
+    /* ====== Bottom-left title ====== */
     .menu{
-      font-size: 1.5rem;
-      bottom: 5%;
-      position: fixed;
-      left: 2.5%;
-      white-space: nowrap;
+      position:fixed;
+      left: var(--pad);
+      bottom: var(--pad);
       z-index: 3;
       pointer-events:none;
       user-select:none;
+      font-size: 1.5rem;
+      line-height: 1.15;
+      opacity:.95;
     }
 
-    /* 상단 메뉴들 */
-    .menu1,.menu2,.menu3,.menu4,.menu5,.menu6{
-      font-size: 1rem;
-      position: fixed;
-      bottom: 94%;
-      transform: translate(-50%, -50%);
-      white-space: nowrap;
-      cursor: pointer;
-      z-index: 6;
-      user-select:none;
-    }
-    .menu1{ right:29%; }
-    .menu2{ right:22%; }
-    .menu3{ right:17%; }
-    .menu4{ right:10%; }
-    .menu5{ right:6%; }
-    .menu6{ right:0%; }
-
-    /* 캔버스 */
+    /* ====== Canvas ====== */
     #canvas-container{
       position: fixed;
-      top:0; left:0;
-      width:100vw; height:100vh;
+      inset: 0;
       z-index: 0;
     }
     #canvas{
@@ -79,55 +77,48 @@
       height:100%;
       image-rendering: pixelated;
     }
-    /* 캔버스 블러는 컨테이너에 적용 */
     #canvas-container.blur{
-      filter: blur(200px);
+      filter: blur(140px);
+    }
+    @media (max-width: 520px){
+      #canvas-container.blur{ filter: blur(80px); }
     }
 
-    /* 컨텐츠 패널 */
-    .syllabus,.schedule,.note,.archive,.controls{
-      font-size: .9rem;
-      white-space: pre-line;
+    /* ====== Panels ====== */
+    .syllabus,.schedule,.note,.controls,.archive{
       position: fixed;
-      top: 10%;
-      left: 20%;
-      right: 20%;
+      top: 64px; /* topbar 아래 */
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(var(--panelW), calc(100vw - (var(--pad) * 2)));
+      max-height: calc(100vh - 96px);
       display:none;
       z-index: 10;
+      font-size: .95rem;
+      line-height: 1.7;
+      white-space: pre-line;
     }
+
+    .panel{
+      border: 0px solid var(--rule);
+      border-radius: 14px;
+      padding: 14px;
+      background: rgba(0,0,0,.00); /* 필요하면 .08 같은 값으로 */
+    }
+
     .scrollable-content{
-      max-height: 75vh;
+      max-height: calc(100vh - 140px);
       overflow-y: auto;
       padding-right: 6px;
     }
 
-    /* 간단 스크롤바 */
+    /* Scrollbar */
     ::-webkit-scrollbar { width: 12px; }
-    ::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,.4); border-radius: 6px; }
+    ::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,.35); border-radius: 6px; }
     ::-webkit-scrollbar-track { background-color: rgba(0,0,0,0); }
-    * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.5) rgba(0,0,0,0); }
+    * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.4) rgba(0,0,0,0); }
 
-    /* (옵션) 아카이브 이미지 */
-    .archive img{ width: 99%; display:block; margin: 0 0 10px 0; }
-
-    /* 우하단 힌트 */
-    .hint{ position:fixed; right:12px; bottom:10px; font-size:12px; opacity:.65; z-index:8; user-select:none; }
-
-    /* 상단 오른쪽: Drive / Are.na 는 링크로 */
-    .menu4 a,.menu5 a{ text-decoration:none; }
-
-    /* 컨트롤 패널(픽셀 시뮬 조절) */
-    .controls{
-      top: 16%;
-      left: 20%;
-      right: 20%;
-    }
-    .panel{
-      border: 0px solid var(--rule);
-      border-radius: 14px;
-      padding: 14px 14px 10px 14px;
-      /* backdrop-filter: blur(6px); */
-    }
+    /* Controls */
     .row{
       display:flex;
       flex-wrap:wrap;
@@ -146,186 +137,185 @@
     }
     .btn:hover{ opacity:.9; }
 
-    .responsive-iframe {
+    /* Note iframe */
+    .responsive-iframe{
+      margin: 0 auto;
+      height:70vh;
+      width: 110%;
+      display:block;
+      border:0;
+    }
 
-    align-content: center;
-    margin: 0 auto;
-    height:70vh;
-    width: 110%;
-    display:block;
+    /* Hint */
+    .hint{
+      position:fixed;
+      right: var(--pad);
+      bottom: var(--pad);
+      font-size:12px;
+      opacity:.65;
+      z-index:8;
+      user-select:none;
+      pointer-events:none;
+    }
 
+    /* Mobile typography tweaks */
+    @media (max-width: 520px){
+      .topbar{ gap: 10px; }
+      .topbar .item{ font-size: .95rem; }
+      .menu{ font-size: 1.1rem; }
+      .syllabus,.schedule,.note,.controls,.archive{
+        top: 56px;
+        font-size: .92rem;
+      }
     }
   </style>
 </head>
 
 <body>
-  <!-- 타이틀 -->
-  <div class="menu">
+  <!-- Bottom-left title (원하면 텍스트 넣기) -->
+  <div class="menu"></div>
 
+  <!-- Top menu -->
+  <div class="topbar">
+    <div class="item" onclick="toggleBlurAndShowContent('syllabus')">Syllabus</div>
+    <div class="item" onclick="toggleBlurAndShowContent('schedule')">Schedule</div>
+    <div class="item" onclick="toggleBlurAndShowContent('note')">Note</div>
+    <div class="item">
+      <a href="https://drive.google.com/drive/folders/15QSksOgfXf6lJh3nK6Jx5az8QscA0mwv?usp=sharing" target="_blank" rel="noopener noreferrer">Drive</a>
+    </div>
   </div>
 
-  <!-- 메뉴 -->
-  <div class="menu1" onclick="toggleBlurAndShowContent('syllabus')"></div>
-  <div class="menu2" onclick="toggleBlurAndShowContent('schedule')"></div>
-  <div class="menu3" onclick="toggleBlurAndShowContent('syllabus')">Syllabus</div>
-
-  <div class="menu4"onclick="toggleBlurAndShowContent('schedule')">Scedule</div>>
-
-  </div>
-  <div class="menu5" onclick="toggleBlurAndShowContent('note')">Note</div>
-  </div>
-  <div class="menu6"><a href="https://drive.google.com/drive/folders/15QSksOgfXf6lJh3nK6Jx5az8QscA0mwv?usp=sharing" target="_blank" rel="noopener noreferrer">Drive</a></div>
-</div>
-
-  <!-- 캔버스 -->
+  <!-- Canvas -->
   <div id="canvas-container">
     <canvas id="canvas"></canvas>
   </div>
 
-  <!-- 컨텐츠: schedule -->
+  <!-- Syllabus -->
   <div class="syllabus" id="syllabus">
     <div class="scrollable-content panel">
-        <strong>개인정보</strong>
-        박지호
-        010-9897-1722
-        jiho6693@gmail.com
-    
-        
-        <strong>면담시간</strong>
-        매주 월요일 2:00 - 5:00 (사전연락)
+<strong>개인정보</strong>
+박지호
+010-9897-1722
+jiho6693@gmail.com
 
+<strong>면담시간</strong>
+매주 월요일 2:00 - 5:00 (사전연락)
 
-        <strong>수업개요</strong>
-        이 수업은 인공지능(AI)을 단순한 기술적 도구나 자동화된 이미지 생성기로 다루지 않는다. AI가 오늘날의 미디어 환경과 상상력, 나아가 세계를 인식하고 설명하는 방식을 어떻게 재구성하고 있는지 살펴본다. 
-         
-        AI를 다루는 데 앞서, 우리는 먼저 컴퓨터가 이미지를 ‘본다’는 것이 무엇을 의미하는지 질문한다. 시각화, 데이터 구조, 알고리즘적 사고, 코드의 작동 방식과 같은 기본 개념을 실습 기반으로 경험하며, AI를 이해하기 위한 기술적 토대를 체화한다. 세미나와 병행해 각자의 관심사에 따라 실험적 프로젝트를 진행한다. Python, Processing, p5.js, Unity, Blender 등 다양한 기술 환경을 활용하여 데이터 시각화, 인터랙티브 설치, 이미지 생성, 서사적 시뮬레이션 등으로 확장할 수 있다
+<strong>수업개요</strong>
+이 수업은 인공지능(AI)을 단순한 기술적 도구나 자동화된 이미지 생성기로 다루지 않는다. AI가 오늘날의 미디어 환경과 상상력, 나아가 세계를 인식하고 설명하는 방식을 어떻게 재구성하고 있는지 살펴본다.
 
+AI를 다루는 데 앞서, 우리는 먼저 컴퓨터가 이미지를 ‘본다’는 것이 무엇을 의미하는지 질문한다. 시각화, 데이터 구조, 알고리즘적 사고, 코드의 작동 방식과 같은 기본 개념을 실습 기반으로 경험하며, AI를 이해하기 위한 기술적 토대를 체화한다. 세미나와 병행해 각자의 관심사에 따라 실험적 프로젝트를 진행한다. Python, Processing, p5.js, Unity, Blender 등 다양한 기술 환경을 활용하여 데이터 시각화, 인터랙티브 설치, 이미지 생성, 서사적 시뮬레이션 등으로 확장할 수 있다.
 
-        <strong>학습목표</strong>
-        학습의 목적은 기능을 익히거나 기술을 완성하는 데 있지 않다. 창작 과정을 통해 기술과 예술의 관계를 다시 살펴보고, AI가 세계를 생산하고 분류하며 예측하는 구조 안에서 예술가가 어떤 방식으로 개입할 수 있는지 탐구한다.
+<strong>학습목표</strong>
+학습의 목적은 기능을 익히거나 기술을 완성하는 데 있지 않다. 창작 과정을 통해 기술과 예술의 관계를 다시 살펴보고, AI가 세계를 생산하고 분류하며 예측하는 구조 안에서 예술가가 어떤 방식으로 개입할 수 있는지 탐구한다.
 
-
-        <strong>평가방식</strong>
-        출석 20%
-        중간과제물 30%
-        발표 10%
-        기말프로젝트 40%
-
-</div>
-
-</div>
+<strong>평가방식</strong>
+출석 20%
+중간과제물 30%
+발표 10%
+기말프로젝트 40%
     </div>
   </div>
 
-
-  <!-- 컨텐츠: schedule -->
+  <!-- Schedule -->
   <div class="schedule" id="schedule">
     <div class="scrollable-content panel">
-        <strong>Week 1 : 3/9</strong>
-        반갑습니다 :> !
-        - 강의 소개 및 평가 방식 안내
-        - 간단한 대화 : 각자의 도구 및 기술적 이해도 파악 
-    
+<strong>Week 1 : 3/9</strong>
+반갑습니다 :> !
+- 강의 소개 및 평가 방식 안내
+- 간단한 대화 : 각자의 도구 및 기술적 이해도 파악
 
+<strong>Week 2 : 3/16</strong>
+- 워크숍: 최근 전시된 AI 기반 작가·전시 레퍼런스 소개
+- 강의: 데이터와 아카이브 (개념과 체계 이해하기)
+- 활동: 수집 데이터 분류 및 아카이빙 발표
+- 과제: 자신의 작업/관심사 관련 이미지, 텍스트, 사운드 수집
 
-        <strong>Week 2 : 3/16</strong>
-        - 워크숍: 최근 전시된 AI 기반 작가·전시 레퍼런스 소개
-        - 강의: 데이터와 아카이브 (개념과 체계 이해하기)
-        - 활동: 수집 데이터 분류 및 아카이빙 발표
-        - 과제: 자신의 작업/관심사 관련 이미지, 텍스트, 사운드 수집
+<strong>Week 3 : 3/23</strong>
+- 실습: 코드로 이미지 다루기 ① 픽셀 & 캔버스
 
+<strong>Week 4 : 3/30</strong>
+- 실습: 코드로 이미지 다루기 ② 모션 & 인터랙션
+- 중간 과제: 결과물 업로드
 
-        <strong>Week 3 : 3/23</strong>
-        - 실습: 코드로 이미지 다루기 ① 픽셀 & 캔버스
+<strong>Week 5 : 4/6</strong>
+- 강의: 카메라의 시선 (얼굴 탐지 / 물체 인식 원리 체험)
+- 토론: 감시·식별 기술과 권력 구조 토론
+- 중간 과제: 결과물 업로드
 
+<strong>Week 6 : 4/13</strong>
+- 현장 학습: 전시 관람 실습
 
-        <strong>Week 4 : 3/30</strong>
-        - 실습: 코드로 이미지 다루기 ② 모션 & 인터랙션
-        - 중간 과제: 결과물 업로드
+<strong>Week 7 : 4/20</strong>
+- 강의: 이미지의 ‘판단’과 ‘분류’ (알고리즘 편향 / 자동화된 판단의 윤리)
+- 체험: 간단한 분류 및 예측 실패 사례 분석
+- 과제: 도서 마지막 챕터 읽기 및 발제 준비
 
+<strong>Week 8 : 4/27</strong>
+- 발표: 발제 발표
+- 강의: 생성 이미지의 세계 ① 텍스트에서 이미지로 (프롬프트 구성, 데이터·스타일의 역할)
+- 과제: 히토 슈타이얼 작업 감상
 
-        <strong>Week 5 : 4/6</strong>
-        - 강의: 카메라의 시선 (얼굴 탐지 / 물체 인식 원리 체험)
-        - 토론: 감시·식별 기술과 권력 구조 토론
-        - 중간 과제: 결과물 업로드
+<strong>Week 9 : 5/4</strong>
+- 강의: 생성 이미지의 세계 ② 반복·변형·조작 이미지와 신뢰 / 저자성 / 진위
+- 사례 공유: 포스트포토그래피, AI 저작권 연구 사례 공유
+- 중간 과제: 결과물 업로드
 
+<strong>Week 10 : 5/11</strong>
+- 기획: 기말 프로젝트 기획안 발표
+- 제출: 기말 프로젝트 기획안 제출
 
-        <strong>Week 6 : 4/13</strong>
-        - 현장 학습: 전시 관람 실습
+<strong>Week 11 : 5/18</strong>
+- 실습: 기술 확장 실습 ① 웹 기반 전시
 
+<strong>Week 12 : 5/25</strong>
+- 실습: 기술 확장 실습 ② 피지컬 컴퓨팅
 
-        <strong>Week 7 : 4/20</strong>
-        - 강의: 이미지의 ‘판단’과 ‘분류’ (알고리즘 편향 / 자동화된 판단의 윤리)
-        - 체험: 간단한 분류 및 예측 실패 사례 분석
-        - 과제: 도서 마지막 챕터 읽기 및 발제 준비
+<strong>Week 13 : 6/1</strong>
+- 스튜디오: 기말 프로젝트 1:1 튜터링 / 디버깅
+- 준비: 미팅 자료 준비
 
+<strong>Week 14 : 6/8</strong>
+- 스튜디오: 기말 프로젝트 연출 및 설치 계획
+- 준비: 미팅 자료 준비
 
-        <strong>Week 8 : 4/27</strong>
-        - 발표: 발제 발표
-        - 강의: 생성 이미지의 세계 ① 텍스트에서 이미지로 (프롬프트 구성, 데이터·스타일의 역할)
-        - 과제: 히토 슈타이얼 작업 감상
+<strong>Week 15 : 6/15</strong>
+- 최종 점검: 보강주 및 작품 마무리
 
-
-        <strong>Week 9 : 5/4</strong>
-        - 강의: 생성 이미지의 세계 ② 반복·변형·조작 이미지와 신뢰 / 저자성 / 진위
-        - 사례 공유: 포스트포토그래피, AI 저작권 연구 사례 공유
-        - 중간 과제: 결과물 업로드
-
-
-        <strong>Week 10 : 5/11</strong>
-        - 기획: 기말 프로젝트 기획안 발표
-        - 제출: 기말 프로젝트 기획안 제출
-
-
-        <strong>Week 11 : 5/18</strong>
-        - 실습: 기술 확장 실습 ① 웹 기반 전시
-
-
-        <strong>Week 12 : 5/25</strong>
-        - 실습: 기술 확장 실습 ② 피지컬 컴퓨팅
-
-
-        <strong>Week 13 : 6/1</strong>
-        - 스튜디오: 기말 프로젝트 1:1 튜터링 / 디버깅
-        - 준비: 미팅 자료 준비
-
-
-        <strong>Week 14 : 6/8</strong>
-        - 스튜디오: 기말 프로젝트 연출 및 설치 계획
-        - 준비: 미팅 자료 준비
-
-
-        <strong>Week 15 : 6/15</strong>
-        - 최종 점검: 보강주 및 작품 마무리
-
-
-        <strong>Week 16 : 6/22</strong>
-        - 전시: 기말 작품 발표 및 전시
-        - 최종 제출: 제작 과정 발표 및 최종 결과물 제출
-
-</div>
-
-</div>
+<strong>Week 16 : 6/22</strong>
+- 전시: 기말 작품 발표 및 전시
+- 최종 제출: 제작 과정 발표 및 최종 결과물 제출
     </div>
   </div>
 
-  <!-- 컨텐츠: controls (기존 Tierra UI를 이 안으로) -->
+  <!-- Note -->
+  <div class="note" id="note">
+    <div class="panel">
+      <iframe
+        class="responsive-iframe"
+        src="https://docs.google.com/document/d/1fQsqcL02Fw7dSHaEXaoCnNaojEXPax1970d-JbrjiD8/edit?usp=sharing&rm=minimal&single=true"
+        allow="autoplay"
+      ></iframe>
+    </div>
+  </div>
+
+  <!-- (선택) Controls: 필요하면 메뉴에 추가해서 열어도 됨 -->
   <div class="controls" id="controls">
     <div class="panel">
       <div class="row" style="margin-bottom:10px;">
         <button class="btn" id="resetBtn">Reset</button>
         <button class="btn" id="intrudeBtn">군집투입</button>
-        <span style="font-size:12px;opacity:.8;">(U 키: UI 토글)</span>
+        <span style="font-size:12px;opacity:.8;">(U 키: Controls 토글)</span>
       </div>
 
       <div class="row">
-        <label>픽셀크기 <span id="pxLabel">40</span></label>
-        <input id="px" type="range" min="1" max="120" step="1" value="80"/>
+        <label>픽셀크기 <span id="pxLabel">80</span></label>
+        <input id="px" type="range" min="1" max="120" step="1" value="70"/>
 
         <label>소멸 강도 <span id="extLabel">0.15</span></label>
         <input id="ext" type="range" min="0" max="1" step="0.05" value="0.15"/>
 
-        <label>속도 <span id="speedLabel">1x</span></label>
+        <label>속도 <span id="speedLabel">0.25x</span></label>
         <input id="speed" type="range" min="0.25" max="3" step="0.25" value="0.25"/>
 
         <label>돌연변이 <span id="mutLabel">1%</span></label>
@@ -337,345 +327,346 @@
     </div>
   </div>
 
-  <!-- 컨텐츠: note -->
-   <div class="note" id="note">
-  <div class="scrollable-content"></div>
-  <iframe class="responsive-iframe" src="https://docs.google.com/document/d/1fQsqcL02Fw7dSHaEXaoCnNaojEXPax1970d-JbrjiD8/edit?usp=sharing?&amp;range=false&amp;range=false&amp;rm=minimal&amp;single=true&amp;"></iframe>
-  </div>
- </div>
 
-  
+  <script>
+    // ======== 메뉴 토글 (blur + show/hide) ========
+    let visibleContent = null;
 
-<script>
-  // ======== 메뉴 토글 (blur + show/hide) ========
-  let visibleContent = null;
+    function toggleBlurAndShowContent(contentId){
+      const cc = document.getElementById('canvas-container');
 
-  function toggleBlurAndShowContent(contentId){
-    const cc = document.getElementById('canvas-container');
+      if (visibleContent) {
+        const prev = document.getElementById(visibleContent);
+        if (prev) prev.style.display = 'none';
+      }
 
-    // hide previous
-    if (visibleContent) {
-      document.getElementById(visibleContent).style.display = 'none';
+      if (visibleContent === contentId) {
+        cc.classList.remove('blur');
+        visibleContent = null;
+      } else {
+        cc.classList.add('blur');
+        const cur = document.getElementById(contentId);
+        if (cur) cur.style.display = 'block';
+        visibleContent = contentId;
+      }
+    }
+  </script>
+
+  <script>
+  /**
+   * ✅ Tierra-inspired Pixel sim
+   * - background canvas = pixel ecosystem
+   * - tap/click = intrusion seed
+   */
+  (function(){
+    const cvs = document.getElementById('canvas');
+    const ctx = cvs.getContext('2d', { alpha:false });
+    ctx.imageSmoothingEnabled = false;
+
+    // ripple effect (optional)
+    let ripples = [];
+
+    // --- SIM params ---
+    let tile = 80;               // 기본 픽셀 크기(커짐)
+    let MAX_DENSITY = 0.15;
+    let BASE_DRAIN = 2;
+    let REPL_COST = 0.6;
+    let REPL_GATE = 0.5;
+    let EAT_GAIN_MIN = 2, EAT_GAIN_MAX = 6;
+    let CROWD_K = 6;
+
+    function resizeCanvas(){
+      const dpr = Math.min(devicePixelRatio||1, 2);
+      cvs.width  = Math.floor(innerWidth * dpr);
+      cvs.height = Math.floor(innerHeight * dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
     }
 
-    if (visibleContent === contentId) {
-      // same clicked -> close
-      cc.classList.remove('blur');
-      visibleContent = null;
-    } else {
-      cc.classList.add('blur');
-      document.getElementById(contentId).style.display = 'block';
-      visibleContent = contentId;
+    addEventListener('resize', ()=>{ buildGrid(true); });
+
+    // --- Grid & agents ---
+    let cols=0, rows=0, grid, agents=[];
+    const N = () => cols*rows;
+    const idx = (x,y)=> (((y%rows)+rows)%rows)*cols + (((x%cols)+cols)%cols);
+
+    // RNG
+    let seed = (Math.random()*1e9)|0;
+    function rand(){ seed ^= seed<<13; seed ^= seed>>>17; seed ^= seed<<5; return (seed>>>0)/4294967296; }
+    function rint(n){ return Math.floor(rand()*n); }
+
+    const seedEl = document.getElementById('seedCount');
+
+    function buildGrid(keepSeeds){
+      resizeCanvas();
+      cols = Math.max(8, Math.floor(innerWidth / tile));
+      rows = Math.max(8, Math.floor(innerHeight / tile));
+      grid = new Int32Array(N()); grid.fill(-1); agents = [];
+      if(keepSeeds){ randomSeeds(+seedEl.value); }
     }
-  }
-</script>
 
-<script>
-/**
- * ✅ Tierra-inspired Pixel sim (드로잉 기능 제거)
- * - background canvas = pixel ecosystem
- * - click = 침입 seed
- */
-
-(function(){
-  const cvs = document.getElementById('canvas');
-  const ctx = cvs.getContext('2d', { alpha:false });
-  ctx.imageSmoothingEnabled = false;
-
-  // ripple effect (optional)
-  let ripples = [];
-
-  // --- SIM params ---
-  let tile = 50;
-  let MAX_DENSITY = 0.15;
-  let BASE_DRAIN = 2;
-  let REPL_COST = 0.6;
-  let REPL_GATE = 0.5;
-  let EAT_GAIN_MIN = 2, EAT_GAIN_MAX = 6;
-  let CROWD_K = 6;
-
-  function headerH(){
-    // 상단 메뉴들은 header가 아니라 fixed div라 높이 0 처리
-    return 0;
-  }
-
-  function resizeCanvas(){
-    const dpr = Math.min(devicePixelRatio||1, 2);
-    cvs.width  = Math.floor(innerWidth * dpr);
-    cvs.height = Math.floor((innerHeight - headerH()) * dpr);
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-  }
-
-  addEventListener('resize', ()=>{ buildGrid(true); });
-
-  // --- Grid & agents ---
-  let cols=0, rows=0, grid, agents=[];
-  const N = () => cols*rows;
-  const idx = (x,y)=> (((y%rows)+rows)%rows)*cols + (((x%cols)+cols)%cols);
-
-  // RNG
-  let seed = (Math.random()*1e9)|0;
-  function rand(){ seed ^= seed<<13; seed ^= seed>>>17; seed ^= seed<<5; return (seed>>>0)/4294967296; }
-  function rint(n){ return Math.floor(rand()*n); }
-
-  const seedEl=document.getElementById('seedCount');
-  function buildGrid(keepSeeds){
-    resizeCanvas();
-    cols = Math.max(8, Math.floor(innerWidth / tile));
-    rows = Math.max(8, Math.floor((innerHeight - headerH()) / tile));
-    grid = new Int32Array(N()); grid.fill(-1); agents = [];
-    if(keepSeeds){ randomSeeds(+seedEl.value); }
-  }
-
-  function ambient(x,y){
-    const n = Math.sin((x*12.9898 + y*78.233)*0.017) * 43758.5453;
-    return Math.max(0, (n - Math.floor(n)) - 0.25);
-  }
-
-  const OPS = 11;
-  function newGenome(len=20){
-    const g = new Uint8Array(len);
-    for(let i=0;i<len;i++) g[i] = rint(OPS);
-    g[rint(len)] = 5;
-    g[rint(len)] = 8;
-    return g;
-  }
-
-  function spawn(x,y,gen){
-    const maxAgents = Math.floor(N()*MAX_DENSITY);
-    if(agents.length >= maxAgents) return -1;
-    const idAt = grid[idx(x,y)]; if(idAt!==-1) return -1;
-    const a = { x,y, dir:rint(4), ip:0, gen:gen||newGenome(), energy:30 + rint(40), age:0, dead:false };
-    const id = agents.length; agents.push(a); grid[idx(x,y)] = id; return id;
-  }
-
-  function ahead(a){ const d=a.dir; return d===0?[0,-1]: d===1?[1,0]: d===2?[0,1]:[-1,0]; }
-  function tryMove(a,dx,dy){
-    const to=idx(a.x+dx,a.y+dy);
-    if(grid[to]===-1){
-      grid[idx(a.x,a.y)] = -1;
-      a.x+=dx; a.y+=dy;
-      grid[idx(a.x,a.y)] = agents.indexOf(a);
-      return true;
+    function ambient(x,y){
+      const n = Math.sin((x*12.9898 + y*78.233)*0.017) * 43758.5453;
+      return Math.max(0, (n - Math.floor(n)) - 0.25);
     }
-    return false;
-  }
 
-  function mutate(gen, rate){
-    const g=gen.slice();
-    for(let i=0;i<g.length;i++) if(rand()<rate) g[i]=rint(OPS);
-    return g;
-  }
+    const OPS = 11;
+    function newGenome(len=20){
+      const g = new Uint8Array(len);
+      for(let i=0;i<len;i++) g[i] = rint(OPS);
+      g[rint(len)] = 5;
+      g[rint(len)] = 8;
+      return g;
+    }
 
-  let MUT_RATE = 0.01;
-  function step(a){
-    if(a.energy<=0){ kill(a); return; }
-    a.age++; a.energy -= BASE_DRAIN;
+    function spawn(x,y,gen){
+      const maxAgents = Math.floor(N()*MAX_DENSITY);
+      if(agents.length >= maxAgents) return -1;
+      const idAt = grid[idx(x,y)];
+      if(idAt!==-1) return -1;
+      const a = { x,y, dir:rint(4), ip:0, gen:gen||newGenome(), energy:30 + rint(40), age:0, dead:false };
+      const id = agents.length; agents.push(a); grid[idx(x,y)] = id; return id;
+    }
 
-    // crowding death
-    const nx=[-1,0,1,-1,1,-1,0,1], ny=[-1,-1,-1,0,0,1,1,1];
-    let neighbors=0;
-    for(let k=0;k<8;k++){ if(grid[idx(a.x+nx[k], a.y+ny[k])]!==-1) neighbors++; }
-    if(neighbors>=CROWD_K && rand()<0.2){ kill(a); return; }
+    function ahead(a){ const d=a.dir; return d===0?[0,-1]: d===1?[1,0]: d===2?[0,1]:[-1,0]; }
+    function tryMove(a,dx,dy){
+      const to=idx(a.x+dx,a.y+dy);
+      if(grid[to]===-1){
+        grid[idx(a.x,a.y)] = -1;
+        a.x+=dx; a.y+=dy;
+        grid[idx(a.x,a.y)] = agents.indexOf(a);
+        return true;
+      }
+      return false;
+    }
 
-    const op = a.gen[a.ip % a.gen.length];
-    switch(op){
-      case 1:{ const [dx,dy]=ahead(a); tryMove(a,dx,dy); break; }
-      case 2: a.dir=(a.dir+3)&3; break;
-      case 3: a.dir=(a.dir+1)&3; break;
-      case 4:{ const [dx,dy]=ahead(a); const empty=(grid[idx(a.x+dx,a.y+dy)]===-1); if(empty) a.ip=(a.ip+1)%a.gen.length; break; }
-      case 5:{
-        if(rand()<REPL_GATE && a.energy>40){
+    function mutate(gen, rate){
+      const g=gen.slice();
+      for(let i=0;i<g.length;i++) if(rand()<rate) g[i]=rint(OPS);
+      return g;
+    }
+
+    let MUT_RATE = 0.01;
+    function step(a){
+      if(a.energy<=0){ kill(a); return; }
+      a.age++; a.energy -= BASE_DRAIN;
+
+      // crowding death
+      const nx=[-1,0,1,-1,1,-1,0,1], ny=[-1,-1,-1,0,0,1,1,1];
+      let neighbors=0;
+      for(let k=0;k<8;k++){ if(grid[idx(a.x+nx[k], a.y+ny[k])]!==-1) neighbors++; }
+      if(neighbors>=CROWD_K && rand()<0.2){ kill(a); return; }
+
+      const op = a.gen[a.ip % a.gen.length];
+      switch(op){
+        case 1:{ const [dx,dy]=ahead(a); tryMove(a,dx,dy); break; }
+        case 2: a.dir=(a.dir+3)&3; break;
+        case 3: a.dir=(a.dir+1)&3; break;
+        case 4:{
           const [dx,dy]=ahead(a);
-          const spot=idx(a.x+dx,a.y+dy);
-          if(grid[spot]===-1){
-            const child=spawn(a.x+dx,a.y+dy, mutate(a.gen, MUT_RATE));
-            if(child!==-1){
-              const give=Math.floor(a.energy*(1-REPL_COST));
-              agents[child].energy=give;
-              a.energy=Math.max(10,a.energy-give);
+          const empty=(grid[idx(a.x+dx,a.y+dy)]===-1);
+          if(empty) a.ip=(a.ip+1)%a.gen.length;
+          break;
+        }
+        case 5:{
+          if(rand()<REPL_GATE && a.energy>40){
+            const [dx,dy]=ahead(a);
+            const spot=idx(a.x+dx,a.y+dy);
+            if(grid[spot]===-1){
+              const child=spawn(a.x+dx,a.y+dy, mutate(a.gen, MUT_RATE));
+              if(child!==-1){
+                const give=Math.floor(a.energy*(1-REPL_COST));
+                agents[child].energy=give;
+                a.energy=Math.max(10,a.energy-give);
+              }
             }
-          }
-        } break;
+          } break;
+        }
+        case 6: a.gen=mutate(a.gen, MUT_RATE*0.5); break;
+        case 7: a.ip=(a.ip+2+(a.gen[(a.ip+1)%a.gen.length]||1))%a.gen.length; break;
+        case 8: a.energy+=Math.floor(EAT_GAIN_MIN+(EAT_GAIN_MAX-EAT_GAIN_MIN)*ambient(a.x,a.y)); break;
+        case 9: break;
+        case 10: kill(a); return;
       }
-      case 6: a.gen=mutate(a.gen, MUT_RATE*0.5); break;
-      case 7: a.ip=(a.ip+2+(a.gen[(a.ip+1)%a.gen.length]||1))%a.gen.length; break;
-      case 8: a.energy+=Math.floor(EAT_GAIN_MIN+(EAT_GAIN_MAX-EAT_GAIN_MIN)*ambient(a.x,a.y)); break;
-      case 9: break;
-      case 10: kill(a); return;
-    }
-    a.ip=(a.ip+1)%a.gen.length;
+      a.ip=(a.ip+1)%a.gen.length;
 
-    if(a.age>1200 && rand()<0.003) kill(a);
-  }
-
-  function kill(a){
-    const id=grid[idx(a.x,a.y)];
-    if(id!==-1) grid[idx(a.x,a.y)] = -1;
-    a.dead=true; a.energy=-1;
-  }
-
-  function compact(){
-    const newAgents=[]; grid.fill(-1);
-    for(let i=0;i<agents.length;i++){
-      const a=agents[i];
-      if(!a.dead){
-        grid[idx(a.x,a.y)] = newAgents.length;
-        newAgents.push(a);
-      }
-    }
-    agents=newAgents;
-  }
-
-  function seedBlob(cx,cy,count){
-    for(let i=0;i<count;i++){
-      const x=cx+rint(7)-3, y=cy+rint(7)-3;
-      spawn(x,y,newGenome(14+rint(10)));
-    }
-  }
-  function randomSeeds(n=40){
-    for(let i=0;i<n;i++) seedBlob(rint(cols),rint(rows),1+rint(2));
-  }
-
-  // --- render ---
-  let trailTick=0, TRAILS=true;
-  function draw(){
-    if(TRAILS){
-      if((trailTick++%2)===0){
-        ctx.globalCompositeOperation='source-over';
-        ctx.fillStyle='rgba(0,0,0,0.35)';
-        ctx.fillRect(0,0,innerWidth,innerHeight);
-      }
-    } else {
-      ctx.clearRect(0,0,innerWidth,innerHeight);
+      if(a.age>1200 && rand()<0.003) kill(a);
     }
 
-    // ripples
-    for(let i=ripples.length-1;i>=0;i--){
-      const p=ripples[i];
-      ctx.strokeStyle=`rgba(255,255,255,${p.alpha})`;
-      ctx.lineWidth=Math.max(1,tile*0.15);
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.stroke();
-      p.r+=p.dr*0.12; p.alpha*=0.88;
-      if(p.alpha<0.05) ripples.splice(i,1);
+    function kill(a){
+      const id=grid[idx(a.x,a.y)];
+      if(id!==-1) grid[idx(a.x,a.y)] = -1;
+      a.dead=true; a.energy=-1;
     }
 
-    // agents (BW pixel only)
-    for(let i=0;i<agents.length;i++){
-      const a=agents[i]; if(a.dead) continue;
-      const x=a.x*tile, y=a.y*tile;
-      const l=0.3+Math.min(1,a.energy/60)*0.65;
-      const L=Math.round(l*100);
-      ctx.fillStyle=`hsl(0,0%,${L}%)`;
-      ctx.fillRect(x,y,tile,tile);
-    }
-  }
-
-  // --- main loop ---
-  let SPEED=1.0, frame=0;
-  function loop(){
-    requestAnimationFrame(loop);
-    const iters=Math.max(1,Math.floor(SPEED));
-    for(let r=0;r<iters;r++){
-      const len=agents.length;
-      if(len>0){
-        const stepCount=Math.min(len,Math.ceil(len*0.6));
-        for(let k=0;k<stepCount;k++){
-          const i=(k*2+frame)%len;
-          step(agents[i]);
+    function compact(){
+      const newAgents=[]; grid.fill(-1);
+      for(let i=0;i<agents.length;i++){
+        const a=agents[i];
+        if(!a.dead){
+          grid[idx(a.x,a.y)] = newAgents.length;
+          newAgents.push(a);
         }
       }
-      if((frame%30)===0) compact();
+      agents=newAgents;
     }
-    draw(); frame++;
-  }
 
-  // --- Extinction control ---
-  const lerp=(a,b,t)=>a+(b-a)*t;
-  function applyExtinction(t){
-    BASE_DRAIN=Math.round(lerp(1,4,t));
-    EAT_GAIN_MIN=Math.round(lerp(6,1,t));
-    EAT_GAIN_MAX=Math.round(lerp(12,6,t));
-    REPL_COST=lerp(0.3,0.75,t);
-    REPL_GATE=lerp(0.8,0.35,t);
-    CROWD_K=Math.round(lerp(7,4,t));
-    MAX_DENSITY=lerp(0.25,0.08,t);
-  }
-
-  // --- UI hooks (controls panel) ---
-  const speedEl=document.getElementById('speed'), speedLabel=document.getElementById('speedLabel');
-  speedEl.oninput=()=>{ SPEED=+speedEl.value; speedLabel.textContent=SPEED+'x'; };
-
-  const mutEl=document.getElementById('mut'), mutLabel=document.getElementById('mutLabel');
-  mutEl.oninput=()=>{ MUT_RATE=+mutEl.value; mutLabel.textContent=Math.round(MUT_RATE*100)+'%'; };
-
-  const seedLabel=document.getElementById('seedLabel');
-  seedEl.oninput=()=>{ seedLabel.textContent=seedEl.value; };
-
-  const pxEl=document.getElementById('px'), pxLabel=document.getElementById('pxLabel');
-  pxEl.oninput=()=>{
-    tile=+pxEl.value; pxLabel.textContent=tile;
-    buildGrid(false);
-    randomSeeds(+seedEl.value);
-  };
-
-  const extEl=document.getElementById('ext'), extLabel=document.getElementById('extLabel');
-  extEl.oninput=()=>{
-    const t=+extEl.value;
-    extLabel.textContent=t.toFixed(2);
-    applyExtinction(t);
-    buildGrid(false);
-    randomSeeds(+seedEl.value);
-  };
-
-  document.getElementById('resetBtn').onclick=()=>{ buildGrid(false); randomSeeds(+seedEl.value); };
-  document.getElementById('intrudeBtn').onclick=()=>{
-    const cx=rint(cols), cy=rint(rows);
-    const alien=new Uint8Array([8,5,1,1,8,5,7,1,5,8,1,6,5,1,1,8]);
-    for(let i=0;i<20;i++) spawn(cx+rint(9)-4,cy+rint(9)-4,mutate(alien,0.02));
-  };
-
-  // click = intrude
-  cvs.addEventListener('click',(e)=>{
-    const rect=cvs.getBoundingClientRect();
-    const gx=Math.floor((e.clientX-rect.left)/tile);
-    const gy=Math.floor((e.clientY-rect.top)/tile);
-    const count=+seedEl.value||8;
-    seedBlob(gx,gy,count);
-
-    const cx=gx*tile+tile*0.5, cy=gy*tile+tile*0.5;
-    ripples.push({x:cx,y:cy,r:tile*0.5,alpha:0.9,dr:Math.max(6,tile*0.9)});
-    if(navigator.vibrate) navigator.vibrate(20);
-  });
-
-  // U key: controls 토글도 같이 하고 싶으면 여기서 처리해도 됨
-  addEventListener('keydown',(e)=>{
-    if(e.key.toLowerCase()==='u'){
-      // 컨텐츠 열려있으면 닫기
-      if (visibleContent){
-        document.getElementById(visibleContent).style.display='none';
-        document.getElementById('canvas-container').classList.remove('blur');
-        visibleContent=null;
-      } else {
-        toggleBlurAndShowContent('controls');
+    function seedBlob(cx,cy,count){
+      for(let i=0;i<count;i++){
+        const x=cx+rint(7)-3, y=cy+rint(7)-3;
+        spawn(x,y,newGenome(14+rint(10)));
       }
     }
-  });
+    function randomSeeds(n=40){
+      for(let i=0;i<n;i++) seedBlob(rint(cols),rint(rows),1+rint(2));
+    }
 
-  // init
-  applyExtinction(+extEl.value);
+    // --- render ---
+    let trailTick=0, TRAILS=true;
+    function draw(){
+      if(TRAILS){
+        if((trailTick++%2)===0){
+          ctx.globalCompositeOperation='source-over';
+          ctx.fillStyle='rgba(0,0,0,0.35)';
+          ctx.fillRect(0,0,innerWidth,innerHeight);
+        }
+      } else {
+        ctx.clearRect(0,0,innerWidth,innerHeight);
+      }
 
-  // 초기 tile을 슬라이더 값으로 세팅
-  tile = +pxEl.value;
-  pxLabel.textContent = tile;
+      // ripples
+      for(let i=ripples.length-1;i>=0;i--){
+        const p=ripples[i];
+        ctx.strokeStyle=`rgba(255,255,255,${p.alpha})`;
+        ctx.lineWidth=Math.max(1,tile*0.15);
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.stroke();
+        p.r+=p.dr*0.12; p.alpha*=0.88;
+        if(p.alpha<0.05) ripples.splice(i,1);
+      }
 
-  buildGrid(false);
-  randomSeeds(+seedEl.value);
-  loop();
-})();
-</script>
+      // agents (BW pixel only)
+      for(let i=0;i<agents.length;i++){
+        const a=agents[i]; if(a.dead) continue;
+        const x=a.x*tile, y=a.y*tile;
+        const l=0.3+Math.min(1,a.energy/60)*0.65;
+        const L=Math.round(l*100);
+        ctx.fillStyle=`hsl(0,0%,${L}%)`;
+        ctx.fillRect(x,y,tile,tile);
+      }
+    }
 
+    // --- main loop ---
+    let SPEED=0.25, frame=0;
+    function loop(){
+      requestAnimationFrame(loop);
+      const iters=Math.max(1,Math.floor(SPEED));
+      for(let r=0;r<iters;r++){
+        const len=agents.length;
+        if(len>0){
+          const stepCount=Math.min(len,Math.ceil(len*0.6));
+          for(let k=0;k<stepCount;k++){
+            const i=(k*2+frame)%len;
+            step(agents[i]);
+          }
+        }
+        if((frame%30)===0) compact();
+      }
+      draw(); frame++;
+    }
+
+    // --- Extinction control ---
+    const lerp=(a,b,t)=>a+(b-a)*t;
+    function applyExtinction(t){
+      BASE_DRAIN=Math.round(lerp(1,4,t));
+      EAT_GAIN_MIN=Math.round(lerp(6,1,t));
+      EAT_GAIN_MAX=Math.round(lerp(12,6,t));
+      REPL_COST=lerp(0.3,0.75,t);
+      REPL_GATE=lerp(0.8,0.35,t);
+      CROWD_K=Math.round(lerp(7,4,t));
+      MAX_DENSITY=lerp(0.25,0.08,t);
+    }
+
+    // --- UI hooks (controls panel) ---
+    const speedEl=document.getElementById('speed'), speedLabel=document.getElementById('speedLabel');
+    speedEl.oninput=()=>{ SPEED=+speedEl.value; speedLabel.textContent=SPEED+'x'; };
+
+    const mutEl=document.getElementById('mut'), mutLabel=document.getElementById('mutLabel');
+    mutEl.oninput=()=>{ MUT_RATE=+mutEl.value; mutLabel.textContent=Math.round(MUT_RATE*100)+'%'; };
+
+    const seedLabel=document.getElementById('seedLabel');
+    seedEl.oninput=()=>{ seedLabel.textContent=seedEl.value; };
+
+    const pxEl=document.getElementById('px'), pxLabel=document.getElementById('pxLabel');
+    pxEl.oninput=()=>{
+      tile=+pxEl.value; pxLabel.textContent=tile;
+      buildGrid(false);
+      randomSeeds(+seedEl.value);
+    };
+
+    const extEl=document.getElementById('ext'), extLabel=document.getElementById('extLabel');
+    extEl.oninput=()=>{
+      const t=+extEl.value;
+      extLabel.textContent=t.toFixed(2);
+      applyExtinction(t);
+      buildGrid(false);
+      randomSeeds(+seedEl.value);
+    };
+
+    document.getElementById('resetBtn').onclick=()=>{ buildGrid(false); randomSeeds(+seedEl.value); };
+    document.getElementById('intrudeBtn').onclick=()=>{
+      const cx=rint(cols), cy=rint(rows);
+      const alien=new Uint8Array([8,5,1,1,8,5,7,1,5,8,1,6,5,1,1,8]);
+      for(let i=0;i<20;i++) spawn(cx+rint(9)-4,cy+rint(9)-4,mutate(alien,0.02));
+    };
+
+    function intrudeAt(clientX, clientY){
+      const rect=cvs.getBoundingClientRect();
+      const gx=Math.floor((clientX-rect.left)/tile);
+      const gy=Math.floor((clientY-rect.top)/tile);
+      const count=+seedEl.value||8;
+      seedBlob(gx,gy,count);
+
+      const cx=gx*tile+tile*0.5, cy=gy*tile+tile*0.5;
+      ripples.push({x:cx,y:cy,r:tile*0.5,alpha:0.9,dr:Math.max(6,tile*0.9)});
+      if(navigator.vibrate) navigator.vibrate(20);
+    }
+
+    // click = intrude
+    cvs.addEventListener('click',(e)=> intrudeAt(e.clientX, e.clientY));
+
+    // touch = intrude (모바일 반응 개선)
+    cvs.addEventListener('touchstart',(e)=>{
+      const t = e.touches[0];
+      intrudeAt(t.clientX, t.clientY);
+    }, {passive:true});
+
+    // U key: controls 토글
+    addEventListener('keydown',(e)=>{
+      if(e.key.toLowerCase()==='u'){
+        if (visibleContent){
+          const prev = document.getElementById(visibleContent);
+          if (prev) prev.style.display='none';
+          document.getElementById('canvas-container').classList.remove('blur');
+          visibleContent=null;
+        } else {
+          toggleBlurAndShowContent('controls');
+        }
+      }
+    });
+
+    // init
+    applyExtinction(+extEl.value);
+
+    tile = +pxEl.value;
+    pxLabel.textContent = tile;
+    SPEED = +speedEl.value;
+    speedLabel.textContent = SPEED + 'x';
+
+    buildGrid(false);
+    randomSeeds(+seedEl.value);
+    loop();
+  })();
+  </script>
 </body>
 </html>
